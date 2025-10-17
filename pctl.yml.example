@@ -1,0 +1,58 @@
+# pctl Configuration File Example
+# Copy this file to pctl.yml and customize the values for your environment
+
+# Portainer instance URL
+# The URL of your Portainer instance (e.g., https://portainer.example.com or https://192.168.1.100:9443)
+portainer_url: https://portainer.example.com
+
+# Portainer API token
+# Generate this token in Portainer: Settings > API Keys > Add access token
+# Token should start with 'ptr_' (e.g., ptr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)
+api_token: ptr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Portainer environment ID
+# The ID of the environment/endpoint where you want to deploy your stack
+# You can find this by running 'pctl init' and selecting from the list, or by checking Portainer's API
+environment_id: 1
+
+# Stack name
+# The name for your Docker Compose stack in Portainer
+# Default: pctl_<project-folder-name> (e.g., pctl_myproject)
+stack_name: pctl_myproject
+
+# Docker Compose file path
+# Path to your Docker Compose file relative to the current directory
+# Default: docker-compose.yml
+compose_file: docker-compose.yml
+
+# TLS certificate verification
+# Set to true to skip TLS certificate verification (recommended for self-hosted Portainer)
+# Set to false to enforce TLS certificate verification (for production with valid certificates)
+# Default: true
+skip_tls_verify: true
+
+# Example configurations for different scenarios:
+
+# Production setup with valid certificates:
+# portainer_url: https://portainer.company.com
+# api_token: ptr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# environment_id: 1
+# stack_name: pctl_production_app
+# compose_file: docker-compose.prod.yml
+# skip_tls_verify: false
+
+# Development setup with self-signed certificates:
+# portainer_url: https://192.168.1.100:9443
+# api_token: ptr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# environment_id: 2
+# stack_name: pctl_dev_app
+# compose_file: docker-compose.dev.yml
+# skip_tls_verify: true
+
+# Local development with custom compose file:
+# portainer_url: https://localhost:9443
+# api_token: ptr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# environment_id: 1
+# stack_name: pctl_local_test
+# compose_file: docker-compose.local.yml
+# skip_tls_verify: true
