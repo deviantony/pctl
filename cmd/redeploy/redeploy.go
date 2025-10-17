@@ -63,7 +63,15 @@ func runRedeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if existingStack == nil {
-		return fmt.Errorf("stack '%s' not found in environment %d. Use 'pctl deploy' to create it first", cfg.StackName, cfg.EnvironmentID)
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Stack not found"))
+		fmt.Println()
+		fmt.Printf("Stack '%s' not found in environment %d.\n", cfg.StackName, cfg.EnvironmentID)
+		fmt.Println()
+		fmt.Println(infoStyle.Render("To deploy this stack, run:"))
+		fmt.Printf("  %s\n", infoStyle.Render("pctl deploy"))
+		fmt.Println()
+		return nil // Exit cleanly without error
 	}
 
 	fmt.Printf("  Found existing stack with ID: %d\n", existingStack.ID)
@@ -72,7 +80,17 @@ func runRedeploy(cmd *cobra.Command, args []string) error {
 	fmt.Println(infoStyle.Render("Updating stack..."))
 	err = client.UpdateStack(existingStack.ID, composeContent, true, cfg.EnvironmentID) // Pull images = true
 	if err != nil {
-		return fmt.Errorf("failed to update stack: %w", err)
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Failed to update stack"))
+		fmt.Println()
+		fmt.Printf("Error: %v\n", err)
+		fmt.Println()
+		fmt.Println(infoStyle.Render("Common issues:"))
+		fmt.Println("  • Port conflicts - check if ports are already in use")
+		fmt.Println("  • Invalid compose file - verify your docker-compose.yml")
+		fmt.Println("  • Network issues - check Portainer connectivity")
+		fmt.Println()
+		return nil // Exit cleanly without error
 	}
 
 	// Display success message

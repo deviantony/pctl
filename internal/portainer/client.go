@@ -177,6 +177,73 @@ func (c *Client) UpdateStack(stackID int, composeContent string, pullImages bool
 	return nil
 }
 
+// GetStackDetails retrieves detailed stack information by ID
+func (c *Client) GetStackDetails(stackID int) (*StackDetails, error) {
+	endpoint := fmt.Sprintf("/api/stacks/%d", stackID)
+	req, err := c.newRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.handleErrorResponse(resp)
+	}
+
+	var stackDetails StackDetails
+	if err := json.NewDecoder(resp.Body).Decode(&stackDetails); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &stackDetails, nil
+}
+
+// GetStackContainers retrieves containers for a specific stack via Docker proxy
+func (c *Client) GetStackContainers(environmentID int, stackName string) ([]Container, error) {
+	// Create filters for Docker Compose project label
+	// Docker API expects filters in the format: {"label": ["com.docker.compose.project=stackname"]}
+	filters := map[string][]string{
+		"label": {fmt.Sprintf("com.docker.compose.project=%s", stackName)},
+	}
+
+	filtersJSON, err := json.Marshal(filters)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal filters: %w", err)
+	}
+
+	// URL encode the filters
+	encodedFilters := url.QueryEscape(string(filtersJSON))
+
+	// Use Docker proxy endpoint to list containers
+	endpoint := fmt.Sprintf("/api/endpoints/%d/docker/containers/json?filters=%s", environmentID, encodedFilters)
+	req, err := c.newRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.handleErrorResponse(resp)
+	}
+
+	var containers []Container
+	if err := json.NewDecoder(resp.Body).Decode(&containers); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return containers, nil
+}
+
 // newRequest creates a new HTTP request with proper headers
 func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request, error) {
 	// Ensure baseURL ends with /

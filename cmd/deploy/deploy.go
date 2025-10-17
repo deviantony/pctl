@@ -63,14 +63,32 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if existingStack != nil {
-		return fmt.Errorf("stack '%s' already exists in environment %d. Use 'pctl redeploy' to update it", cfg.StackName, cfg.EnvironmentID)
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Stack already exists"))
+		fmt.Println()
+		fmt.Printf("Stack '%s' already exists in environment %d.\n", cfg.StackName, cfg.EnvironmentID)
+		fmt.Println()
+		fmt.Println(infoStyle.Render("To update this stack, run:"))
+		fmt.Printf("  %s\n", infoStyle.Render("pctl redeploy"))
+		fmt.Println()
+		return nil // Exit cleanly without error
 	}
 
 	// Create new stack
 	fmt.Println(infoStyle.Render("Creating new stack..."))
 	stack, err := client.CreateStack(cfg.StackName, composeContent, cfg.EnvironmentID)
 	if err != nil {
-		return fmt.Errorf("failed to create stack: %w", err)
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Failed to create stack"))
+		fmt.Println()
+		fmt.Printf("Error: %v\n", err)
+		fmt.Println()
+		fmt.Println(infoStyle.Render("Common issues:"))
+		fmt.Println("  • Port conflicts - check if ports are already in use")
+		fmt.Println("  • Invalid compose file - verify your docker-compose.yml")
+		fmt.Println("  • Network issues - check Portainer connectivity")
+		fmt.Println()
+		return nil // Exit cleanly without error
 	}
 
 	// Display success message

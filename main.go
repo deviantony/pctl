@@ -6,6 +6,7 @@ import (
 
 	"pctl/cmd/deploy"
 	initcmd "pctl/cmd/init"
+	"pctl/cmd/ps"
 	"pctl/cmd/redeploy"
 
 	"github.com/spf13/cobra"
@@ -29,5 +30,6 @@ func main() {
 func init() {
 	rootCmd.AddCommand(initcmd.InitCmd)
 	rootCmd.AddCommand(deploy.DeployCmd)
+	rootCmd.AddCommand(ps.PsCmd)
 	rootCmd.AddCommand(redeploy.RedeployCmd)
 }

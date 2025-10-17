@@ -36,6 +36,40 @@ type UpdateStackRequest struct {
 	Prune     bool   `json:"Prune"`
 }
 
+// StackDetails represents detailed stack information from Portainer
+type StackDetails struct {
+	ID            int    `json:"Id"`
+	Name          string `json:"Name"`
+	Status        int    `json:"Status"`
+	EnvironmentID int    `json:"EndpointId"`
+	CreatedAt     int64  `json:"creationDate"`
+	UpdatedAt     int64  `json:"updateDate"`
+	CreatedBy     string `json:"createdBy"`
+	UpdatedBy     string `json:"updatedBy"`
+	ProjectPath   string `json:"projectPath"`
+	EntryPoint    string `json:"EntryPoint"`
+}
+
+// Container represents a Docker container
+type Container struct {
+	ID      string            `json:"Id"`
+	Names   []string          `json:"Names"`
+	Image   string            `json:"Image"`
+	Status  string            `json:"Status"`
+	State   string            `json:"State"`
+	Created int64             `json:"Created"`
+	Labels  map[string]string `json:"Labels"`
+	Ports   []Port            `json:"Ports"`
+}
+
+// Port represents container port mapping
+type Port struct {
+	PrivatePort int    `json:"PrivatePort"`
+	PublicPort  int    `json:"PublicPort"`
+	Type        string `json:"Type"`
+	IP          string `json:"IP"`
+}
+
 // APIError represents an error response from the Portainer API
 type APIError struct {
 	Message string `json:"message"`
