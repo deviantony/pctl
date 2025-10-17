@@ -36,6 +36,11 @@ It aims to be a dev companion that allows a developer to quickly deploy and rede
 - Displays stack information, container status, ports, and resource usage
 - Uses Portainer's Docker proxy to get real-time container information
 
+#### `pctl logs`
+- View and stream logs from stack containers
+- Real-time log streaming with interactive viewer
+- Support for multiple containers with search functionality
+
 ### Configuration File (`pctl.yml`)
 ```yaml
 portainer_url: https://portainer.example.com
@@ -76,7 +81,6 @@ skip_tls_verify: true
 - **Docker Standalone environments only** - Swarm and Kubernetes environments not supported in v1
 
 ## Future Enhancements (Out of Scope for v1)
-- `pctl logs` - View stack logs  
 - Secure token storage
 - **Multi-environment type support** - Automatic detection and support for different Portainer environment types:
   - Docker Swarm environments with Swarm Compose files
@@ -88,5 +92,6 @@ skip_tls_verify: true
 - Developer can deploy new stack to Portainer
 - Developer can redeploy existing stack
 - Developer can check stack status and view running containers
+- Developer can view and stream logs from stack containers
 - Clear error messages for common failure scenarios
 - Configuration persists between commands
