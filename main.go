@@ -6,6 +6,7 @@ import (
 
 	"pctl/cmd/deploy"
 	initcmd "pctl/cmd/init"
+	"pctl/cmd/logs"
 	"pctl/cmd/ps"
 	"pctl/cmd/redeploy"
 
@@ -30,6 +31,7 @@ func main() {
 func init() {
 	rootCmd.AddCommand(initcmd.InitCmd)
 	rootCmd.AddCommand(deploy.DeployCmd)
+	rootCmd.AddCommand(logs.LogsCmd)
 	rootCmd.AddCommand(ps.PsCmd)
 	rootCmd.AddCommand(redeploy.RedeployCmd)
 }

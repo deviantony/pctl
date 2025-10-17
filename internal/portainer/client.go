@@ -244,6 +244,45 @@ func (c *Client) GetStackContainers(environmentID int, stackName string) ([]Cont
 	return containers, nil
 }
 
+// GetContainerLogs retrieves logs for a specific container via Docker proxy
+func (c *Client) GetContainerLogs(environmentID int, containerID string, tail int) (string, error) {
+	// Build query parameters
+	params := url.Values{}
+	if tail > 0 {
+		params.Set("tail", fmt.Sprintf("%d", tail))
+	}
+	params.Set("stdout", "true")
+	params.Set("stderr", "true")
+	params.Set("timestamps", "true")
+
+	// Use Docker proxy endpoint to get container logs
+	endpoint := fmt.Sprintf("/api/endpoints/%d/docker/containers/%s/logs?%s",
+		environmentID, containerID, params.Encode())
+
+	req, err := c.newRequest("GET", endpoint, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", c.handleErrorResponse(resp)
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return string(body), nil
+}
+
 // newRequest creates a new HTTP request with proper headers
 func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request, error) {
 	// Ensure baseURL ends with /
