@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"pctl/internal/config"
-	"pctl/internal/portainer"
+	"github.com/deviantony/pctl/internal/config"
+	"github.com/deviantony/pctl/internal/portainer"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"

@@ -3,9 +3,9 @@ package redeploy
 import (
 	"fmt"
 
-	"pctl/internal/compose"
-	"pctl/internal/config"
-	"pctl/internal/portainer"
+	"github.com/deviantony/pctl/internal/compose"
+	"github.com/deviantony/pctl/internal/config"
+	"github.com/deviantony/pctl/internal/portainer"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"

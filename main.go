@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"pctl/cmd/deploy"
-	initcmd "pctl/cmd/init"
-	"pctl/cmd/logs"
-	"pctl/cmd/ps"
-	"pctl/cmd/redeploy"
+	"github.com/deviantony/pctl/cmd/deploy"
+	initcmd "github.com/deviantony/pctl/cmd/init"
+	"github.com/deviantony/pctl/cmd/logs"
+	"github.com/deviantony/pctl/cmd/ps"
+	"github.com/deviantony/pctl/cmd/redeploy"
 
 	"github.com/spf13/cobra"
 )
