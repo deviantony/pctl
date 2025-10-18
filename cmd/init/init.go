@@ -7,6 +7,7 @@ import (
 
 	"github.com/deviantony/pctl/internal/compose"
 	"github.com/deviantony/pctl/internal/config"
+	"github.com/deviantony/pctl/internal/errors"
 	"github.com/deviantony/pctl/internal/portainer"
 	"github.com/deviantony/pctl/internal/spinner"
 
@@ -28,7 +29,8 @@ var InitCmd = &cobra.Command{
 	Long: `Initialize pctl by creating a configuration file with your Portainer settings.
 This command will guide you through setting up your Portainer URL, API token,
 environment selection, and other deployment options.`,
-	RunE: runInit,
+	RunE:         runInit,
+	SilenceUsage: true,
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -100,8 +102,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 		fmt.Println(errorStyle.Render("✗ Failed to connect to Portainer"))
 		fmt.Println()
-		spinnerModel := spinner.NewSpinnerModel("")
-		fmt.Println(spinnerModel.GetFriendlyErrorMessage(err))
+		fmt.Println(errors.FormatError(err))
 		fmt.Println()
 		fmt.Println(infoStyle.Render("Please check your connection and try running 'pctl init' again."))
 		return nil // Exit cleanly without showing usage

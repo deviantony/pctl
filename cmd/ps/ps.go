@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/deviantony/pctl/internal/config"
+	"github.com/deviantony/pctl/internal/errors"
 	"github.com/deviantony/pctl/internal/portainer"
 	"github.com/deviantony/pctl/internal/spinner"
 
@@ -27,14 +28,19 @@ var PsCmd = &cobra.Command{
 	Short: "Show stack status and running containers",
 	Long: `Display the status of your deployed stack and its running containers.
 Shows stack information, container status, ports, and resource usage.`,
-	RunE: runPs,
+	RunE:         runPs,
+	SilenceUsage: true,
 }
 
 func runPs(cmd *cobra.Command, args []string) error {
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		return err
+		fmt.Println(errorStyle.Render("✗ Configuration error"))
+		fmt.Println()
+		fmt.Printf("Error: %v\n", err)
+		fmt.Println()
+		return nil // Exit cleanly without showing usage
 	}
 
 	// Validate configuration
@@ -58,7 +64,12 @@ func runPs(cmd *cobra.Command, args []string) error {
 		return fetchErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to check for existing stack: %w", err)
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Failed to check for existing stack"))
+		fmt.Println()
+		fmt.Println(errors.FormatError(err))
+		fmt.Println()
+		return nil // Exit cleanly without showing usage
 	}
 
 	if existingStack == nil {
@@ -83,7 +94,12 @@ func runPs(cmd *cobra.Command, args []string) error {
 		return fetchErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to get stack details: %w", err)
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Failed to get stack details"))
+		fmt.Println()
+		fmt.Println(errors.FormatError(err))
+		fmt.Println()
+		return nil // Exit cleanly without showing usage
 	}
 
 	// Get containers for the stack
@@ -97,7 +113,7 @@ func runPs(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 		fmt.Println(errorStyle.Render("✗ Failed to fetch container information"))
 		fmt.Println()
-		fmt.Printf("Error: %v\n", err)
+		fmt.Println(errors.FormatError(err))
 		fmt.Println()
 		fmt.Println(infoStyle.Render("Stack information (containers unavailable):"))
 		fmt.Println()

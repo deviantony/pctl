@@ -5,6 +5,7 @@ import (
 
 	"github.com/deviantony/pctl/internal/compose"
 	"github.com/deviantony/pctl/internal/config"
+	"github.com/deviantony/pctl/internal/errors"
 	"github.com/deviantony/pctl/internal/portainer"
 	"github.com/deviantony/pctl/internal/spinner"
 
@@ -24,14 +25,19 @@ var DeployCmd = &cobra.Command{
 	Long: `Deploy a new Docker Compose stack to Portainer.
 This command will create a new stack in the configured environment.
 If the stack already exists, use 'pctl redeploy' instead.`,
-	RunE: runDeploy,
+	RunE:         runDeploy,
+	SilenceUsage: true,
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		return err
+		fmt.Println(errorStyle.Render("✗ Configuration error"))
+		fmt.Println()
+		fmt.Printf("Error: %v\n", err)
+		fmt.Println()
+		return nil // Exit cleanly without showing usage
 	}
 
 	// Validate configuration
@@ -64,7 +70,12 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		return fetchErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to check for existing stack: %w", err)
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Failed to check for existing stack"))
+		fmt.Println()
+		fmt.Println(errors.FormatError(err))
+		fmt.Println()
+		return nil // Exit cleanly without showing usage
 	}
 
 	if existingStack != nil {
@@ -90,7 +101,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 		fmt.Println(errorStyle.Render("✗ Failed to create stack"))
 		fmt.Println()
-		fmt.Printf("Error: %v\n", err)
+		fmt.Println(errors.FormatError(err))
 		fmt.Println()
 		fmt.Println(infoStyle.Render("Common issues:"))
 		fmt.Println("  • Port conflicts - check if ports are already in use")

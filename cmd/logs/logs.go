@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/deviantony/pctl/internal/config"
+	"github.com/deviantony/pctl/internal/errors"
 	"github.com/deviantony/pctl/internal/portainer"
 	"github.com/deviantony/pctl/internal/spinner"
 
@@ -31,7 +32,8 @@ var LogsCmd = &cobra.Command{
 	Long: `Display logs from containers in your deployed stack.
 By default, shows the last 50 lines from all containers.
 Use --service to filter logs from a specific service.`,
-	RunE: runLogs,
+	RunE:         runLogs,
+	SilenceUsage: true,
 }
 
 func init() {
@@ -43,7 +45,11 @@ func runLogs(cmd *cobra.Command, args []string) error {
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		return err
+		fmt.Println(errorStyle.Render("✗ Configuration error"))
+		fmt.Println()
+		fmt.Printf("Error: %v\n", err)
+		fmt.Println()
+		return nil // Exit cleanly without showing usage
 	}
 
 	// Validate configuration
@@ -67,7 +73,12 @@ func runLogs(cmd *cobra.Command, args []string) error {
 		return fetchErr
 	})
 	if err != nil {
-		return fmt.Errorf("failed to check for existing stack: %w", err)
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Failed to check for existing stack"))
+		fmt.Println()
+		fmt.Println(errors.FormatError(err))
+		fmt.Println()
+		return nil // Exit cleanly without showing usage
 	}
 
 	if existingStack == nil {
@@ -95,7 +106,7 @@ func runLogs(cmd *cobra.Command, args []string) error {
 		fmt.Println()
 		fmt.Println(errorStyle.Render("✗ Failed to fetch container information"))
 		fmt.Println()
-		fmt.Printf("Error: %v\n", err)
+		fmt.Println(errors.FormatError(err))
 		fmt.Println()
 		fmt.Println(infoStyle.Render("Note: Container information could not be retrieved."))
 		fmt.Println("This might be due to Docker API access restrictions or filter issues.")
