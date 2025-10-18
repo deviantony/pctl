@@ -1,6 +1,6 @@
-# pctl - Portainer Control CLI
+# pctl - Dev Companion for Portainer
 
-A simple CLI tool for deploying and managing Docker Compose applications via Portainer. Deploy your stacks with a single command and manage them through Portainer's API.
+A simple CLI tool for quickly deploying and re-deploying your application on a Portainer environment. 
 
 [![asciicast](https://asciinema.org/a/zYM6Tu31LesuRowrLDJZfGzcU.svg)](https://asciinema.org/a/zYM6Tu31LesuRowrLDJZfGzcU)
 
