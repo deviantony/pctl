@@ -6,7 +6,7 @@ BUILD_DIR=build
 VERSION?=dev
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
-LDFLAGS=-ldflags "-X main.Version=$(VERSION) -X main.Commit=$(COMMIT) -X main.BuildTime=$(BUILD_TIME)"
+LDFLAGS=-ldflags "-X github.com/deviantony/pctl/cmd/version.Version=$(VERSION) -X github.com/deviantony/pctl/cmd/version.Commit=$(COMMIT) -X github.com/deviantony/pctl/cmd/version.BuildTime=$(BUILD_TIME)"
 
 # Default target
 .PHONY: all
@@ -123,3 +123,4 @@ help:
 	@echo "  make build VERSION=1.0.0"
 	@echo "  make build-all"
 	@echo "  make test-coverage"
+	@echo "  ./build/pctl version"

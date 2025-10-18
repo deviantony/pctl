@@ -9,6 +9,7 @@ import (
 	"github.com/deviantony/pctl/cmd/logs"
 	"github.com/deviantony/pctl/cmd/ps"
 	"github.com/deviantony/pctl/cmd/redeploy"
+	"github.com/deviantony/pctl/cmd/version"
 
 	"github.com/spf13/cobra"
 )
@@ -34,4 +35,5 @@ func init() {
 	rootCmd.AddCommand(logs.LogsCmd)
 	rootCmd.AddCommand(ps.PsCmd)
 	rootCmd.AddCommand(redeploy.RedeployCmd)
+	rootCmd.AddCommand(version.VersionCmd)
 }

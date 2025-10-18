@@ -195,6 +195,16 @@ View and stream logs from stack containers.
 - Navigate between different containers
 - Search and filter log content
 
+### `pctl version`
+Display version information about the pctl binary.
+
+**Displays:**
+- Version number
+- Git commit hash
+- Build timestamp
+- Go version used to build the binary
+- Target platform (OS/Architecture)
+
 ## Requirements
 
 - **Go 1.25.1+** (for building from source)
