@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -156,6 +157,9 @@ func (m LogsViewer) getCurrentContent() string {
 		return "(no logs available)"
 	}
 
+	// Calculate available width for content (account for viewport width and some padding)
+	availableWidth := m.width - 4 // Leave some padding on the sides
+
 	// Split logs into lines and apply styling
 	lines := strings.Split(strings.TrimSpace(container.Logs), "\n")
 	var styledLines []string
@@ -164,11 +168,73 @@ func (m LogsViewer) getCurrentContent() string {
 		if line != "" {
 			// Clean up Docker log format (remove stream prefixes)
 			cleanLine := cleanDockerLogLine(line)
-			styledLines = append(styledLines, m.logStyle.Render(cleanLine))
+
+			// Wrap long lines
+			wrappedLines := wrapText(cleanLine, availableWidth)
+			for _, wrappedLine := range wrappedLines {
+				styledLines = append(styledLines, m.logStyle.Render(wrappedLine))
+			}
 		}
 	}
 
 	return strings.Join(styledLines, "\n")
+}
+
+// wrapText wraps text to fit within the specified width
+func wrapText(text string, width int) []string {
+	if width <= 0 {
+		return []string{text}
+	}
+
+	// If the text is already shorter than the width, return as-is
+	if utf8.RuneCountInString(text) <= width {
+		return []string{text}
+	}
+
+	var lines []string
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return []string{text}
+	}
+
+	currentLine := ""
+	for _, word := range words {
+		// If adding this word would exceed the width, start a new line
+		if currentLine != "" && utf8.RuneCountInString(currentLine+" "+word) > width {
+			lines = append(lines, currentLine)
+			currentLine = word
+		} else {
+			if currentLine == "" {
+				currentLine = word
+			} else {
+				currentLine += " " + word
+			}
+		}
+	}
+
+	// Add the last line if it's not empty
+	if currentLine != "" {
+		lines = append(lines, currentLine)
+	}
+
+	// If no wrapping occurred (single very long word), force break it
+	if len(lines) == 0 {
+		lines = []string{text}
+	} else if len(lines) == 1 && utf8.RuneCountInString(lines[0]) > width {
+		// Handle case where a single word is longer than the width
+		var forcedLines []string
+		runes := []rune(lines[0])
+		for i := 0; i < len(runes); i += width {
+			end := i + width
+			if end > len(runes) {
+				end = len(runes)
+			}
+			forcedLines = append(forcedLines, string(runes[i:end]))
+		}
+		lines = forcedLines
+	}
+
+	return lines
 }
 
 // cleanDockerLogLine removes Docker's log format prefixes
@@ -217,8 +283,30 @@ func isInteractive() bool {
 	return err == nil
 }
 
+// getTerminalWidth attempts to get the terminal width
+func getTerminalWidth() (int, error) {
+	// Try to get terminal size using a simple approach
+	// This is a basic implementation - in a real scenario you might want to use
+	// a more robust library like github.com/mattn/go-isatty or similar
+	if widthStr := os.Getenv("COLUMNS"); widthStr != "" {
+		var width int
+		if n, err := fmt.Sscanf(widthStr, "%d", &width); err == nil && n == 1 {
+			return width, nil
+		}
+	}
+
+	// Default fallback
+	return 80, fmt.Errorf("unable to determine terminal width")
+}
+
 // runNonInteractiveViewer displays logs in a simple format for non-interactive environments
 func runNonInteractiveViewer(containers []ContainerLogs) error {
+	// Get terminal width for wrapping (default to 80 if we can't determine it)
+	width := 80
+	if w, err := getTerminalWidth(); err == nil && w > 0 {
+		width = w
+	}
+
 	for i, container := range containers {
 		if i > 0 {
 			fmt.Println()
@@ -233,7 +321,11 @@ func runNonInteractiveViewer(containers []ContainerLogs) error {
 			for _, line := range lines {
 				if line != "" {
 					cleanLine := cleanDockerLogLine(line)
-					fmt.Println(logStyle.Render(cleanLine))
+					// Wrap long lines for non-interactive output
+					wrappedLines := wrapText(cleanLine, width-4) // Leave some padding
+					for _, wrappedLine := range wrappedLines {
+						fmt.Println(logStyle.Render(wrappedLine))
+					}
 				}
 			}
 		}

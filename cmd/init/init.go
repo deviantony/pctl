@@ -8,6 +8,7 @@ import (
 	"github.com/deviantony/pctl/internal/compose"
 	"github.com/deviantony/pctl/internal/config"
 	"github.com/deviantony/pctl/internal/portainer"
+	"github.com/deviantony/pctl/internal/spinner"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -18,6 +19,7 @@ var (
 	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
 	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+	warningStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
 )
 
 var InitCmd = &cobra.Command{
@@ -80,11 +82,29 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to run form: %w", err)
 	}
 
-	// Create Portainer client to fetch environments (using default TLS settings)
-	client := portainer.NewClient(formData.PortainerURL, formData.APIToken)
-	environments, err := client.GetEnvironments()
+	// Show spinner while fetching environments
+	fmt.Println()
+
+	// Use the shared spinner utility
+	var environments []portainer.Environment
+	err := spinner.RunWithSpinner("Fetching environments from Portainer...", func() error {
+		client := portainer.NewClient(formData.PortainerURL, formData.APIToken)
+		var fetchErr error
+		environments, fetchErr = client.GetEnvironments()
+		return fetchErr
+	})
+
+	// Check if there was an error during fetching
 	if err != nil {
-		return fmt.Errorf("failed to fetch environments from Portainer: %w", err)
+		// Show friendly error message without the duplicate usage
+		fmt.Println()
+		fmt.Println(errorStyle.Render("✗ Failed to connect to Portainer"))
+		fmt.Println()
+		spinnerModel := spinner.NewSpinnerModel("")
+		fmt.Println(spinnerModel.GetFriendlyErrorMessage(err))
+		fmt.Println()
+		fmt.Println(infoStyle.Render("Please check your connection and try running 'pctl init' again."))
+		return nil // Exit cleanly without showing usage
 	}
 
 	if len(environments) == 0 {

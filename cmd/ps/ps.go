@@ -8,6 +8,7 @@ import (
 
 	"github.com/deviantony/pctl/internal/config"
 	"github.com/deviantony/pctl/internal/portainer"
+	"github.com/deviantony/pctl/internal/spinner"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
@@ -50,8 +51,12 @@ func runPs(cmd *cobra.Command, args []string) error {
 	client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
 
 	// Check if stack exists
-	fmt.Println(infoStyle.Render("Checking if stack exists..."))
-	existingStack, err := client.GetStack(cfg.StackName, cfg.EnvironmentID)
+	var existingStack *portainer.Stack
+	err = spinner.RunWithSpinner("Checking if stack exists...", func() error {
+		var fetchErr error
+		existingStack, fetchErr = client.GetStack(cfg.StackName, cfg.EnvironmentID)
+		return fetchErr
+	})
 	if err != nil {
 		return fmt.Errorf("failed to check for existing stack: %w", err)
 	}
@@ -71,15 +76,23 @@ func runPs(cmd *cobra.Command, args []string) error {
 	fmt.Println(successStyle.Render("✓ Stack found"))
 
 	// Get detailed stack information
-	fmt.Println(infoStyle.Render("Fetching stack details..."))
-	stackDetails, err := client.GetStackDetails(existingStack.ID)
+	var stackDetails *portainer.StackDetails
+	err = spinner.RunWithSpinner("Fetching stack details...", func() error {
+		var fetchErr error
+		stackDetails, fetchErr = client.GetStackDetails(existingStack.ID)
+		return fetchErr
+	})
 	if err != nil {
 		return fmt.Errorf("failed to get stack details: %w", err)
 	}
 
 	// Get containers for the stack
-	fmt.Println(infoStyle.Render("Fetching container information..."))
-	containers, err := client.GetStackContainers(cfg.EnvironmentID, cfg.StackName)
+	var containers []portainer.Container
+	err = spinner.RunWithSpinner("Fetching container information...", func() error {
+		var fetchErr error
+		containers, fetchErr = client.GetStackContainers(cfg.EnvironmentID, cfg.StackName)
+		return fetchErr
+	})
 	if err != nil {
 		fmt.Println()
 		fmt.Println(errorStyle.Render("✗ Failed to fetch container information"))

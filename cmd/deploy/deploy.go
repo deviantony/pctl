@@ -6,6 +6,7 @@ import (
 	"github.com/deviantony/pctl/internal/compose"
 	"github.com/deviantony/pctl/internal/config"
 	"github.com/deviantony/pctl/internal/portainer"
+	"github.com/deviantony/pctl/internal/spinner"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
@@ -56,8 +57,12 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
 
 	// Check if stack already exists
-	fmt.Println(infoStyle.Render("Checking if stack already exists..."))
-	existingStack, err := client.GetStack(cfg.StackName, cfg.EnvironmentID)
+	var existingStack *portainer.Stack
+	err = spinner.RunWithSpinner("Checking if stack already exists...", func() error {
+		var fetchErr error
+		existingStack, fetchErr = client.GetStack(cfg.StackName, cfg.EnvironmentID)
+		return fetchErr
+	})
 	if err != nil {
 		return fmt.Errorf("failed to check for existing stack: %w", err)
 	}
@@ -75,8 +80,12 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create new stack
-	fmt.Println(infoStyle.Render("Creating new stack..."))
-	stack, err := client.CreateStack(cfg.StackName, composeContent, cfg.EnvironmentID)
+	var stack *portainer.Stack
+	err = spinner.RunWithSpinner("Creating new stack...", func() error {
+		var fetchErr error
+		stack, fetchErr = client.CreateStack(cfg.StackName, composeContent, cfg.EnvironmentID)
+		return fetchErr
+	})
 	if err != nil {
 		fmt.Println()
 		fmt.Println(errorStyle.Render("✗ Failed to create stack"))
