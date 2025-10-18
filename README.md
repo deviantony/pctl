@@ -2,6 +2,8 @@
 
 A simple CLI tool for deploying and managing Docker Compose applications via Portainer. Deploy your stacks with a single command and manage them through Portainer's API.
 
+[![asciicast](https://asciinema.org/a/zYM6Tu31LesuRowrLDJZfGzcU.svg)](https://asciinema.org/a/zYM6Tu31LesuRowrLDJZfGzcU)
+
 ## Usage
 
 ### Prerequisites
