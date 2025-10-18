@@ -99,4 +99,4 @@ wget https://github.com/deviantony/pctl/releases/download/v1.0.0/pctl_1.0.0_wind
 
 ## Limitations
 
-- **Docker Standalone environments only** - Full support for Docker Swarm and Kubernetes environments is planned for future versions.
+- **Docker Standalone environments only** - Full support for Kubernetes environments is planned for future versions.

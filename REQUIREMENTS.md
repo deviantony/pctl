@@ -74,16 +74,14 @@ skip_tls_verify: true
 
 ### Assumptions & Limitations
 - Image building and publishing handled externally (not in scope)
-- Portainer doesn't support building images, only deploying pre-built ones
 - API token stored as plain text (acceptable for v1)
 - Single compose file per project
-- TLS certificate verification can be disabled for self-hosted instances with self-signed certificates
-- **Docker Standalone environments only** - Swarm and Kubernetes environments not supported in v1
+- TLS certificate verification can be enabled for production instances with proper certificates
+- **Docker Standalone environments only** - Kubernetes environments not supported in v1
 
-## Future Enhancements (Out of Scope for v1)
+## Potential Future Enhancements
 - Secure token storage
 - **Multi-environment type support** - Automatic detection and support for different Portainer environment types:
-  - Docker Swarm environments with Swarm Compose files
   - Kubernetes environments with Kubernetes manifests
   - Environment-specific deployment logic based on detected environment type
 
