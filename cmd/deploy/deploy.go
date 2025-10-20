@@ -99,7 +99,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
 
 		// Create build orchestrator
-		logger := build.NewSimpleBuildLogger("BUILD")
+		logger := build.NewStyledBuildLogger("BUILD")
 		orchestrator := build.NewBuildOrchestrator(client, buildConfig, cfg.EnvironmentID, cfg.StackName, logger)
 
 		// Build services
