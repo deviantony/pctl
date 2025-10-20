@@ -1,206 +1,129 @@
-# pctl - Dev Companion for Portainer
+<p align="center">
+  <img alt="GoReleaser Logo" src="https://avatars2.githubusercontent.com/u/24697112?v=3&s=200" height="140" />
+  <h3 align="center">GoReleaser</h3>
+  <p align="center">Deliver Go binaries as fast and easily as possible.</p>
+</p>
 
-A simple CLI tool for quickly deploying and re-deploying your application on a Portainer environment. 
+---
 
-[![asciicast](https://asciinema.org/a/zYM6Tu31LesuRowrLDJZfGzcU.svg)](https://asciinema.org/a/zYM6Tu31LesuRowrLDJZfGzcU)
+GoReleaser builds Go binaries for several platforms, creates a GitHub release and then
+pushes a Homebrew formula to a tap repository. All that wrapped in your favorite CI.
 
-## Usage
+![](https://raw.githubusercontent.com/goreleaser/example-simple/main/goreleaser.gif)
 
-### Prerequisites
-- A `docker-compose.yml` file in your project directory
-- Portainer instance with API access
-- Portainer API token (generate in Portainer: Settings > API Keys)
+---
 
-### 1. Initialize Configuration
-```bash
-pctl init
-```
-Interactive setup to configure your Portainer connection (URL, API token, environment). This creates a `pctl.yml` configuration file.
+## Get GoReleaser
 
-### 2. Deploy Your Application
-```bash
-pctl deploy
-```
-Deploy your Docker Compose stack to Portainer. The tool reads your `docker-compose.yml` file and creates a new stack.
+- [On your machine](https://goreleaser.com/install/);
+- [On CI/CD systems](https://goreleaser.com/ci/).
 
-**Build Support**: If your compose file contains `build:` directives, pctl will automatically build the images before deployment. See the [Build Configuration](#build-configuration) section for details.
+## Documentation
 
-### 3. Update Existing Stack
-```bash
-pctl redeploy
-```
-Update an existing stack with latest images.
+Documentation is hosted live at https://goreleaser.com
 
-**Force Rebuild**: Use the `-f` or `--force-rebuild` flag to force rebuild images even if they haven't changed:
-```bash
-pctl redeploy -f
-```
-This sets `force_build=true` for this run, which includes no-cache behavior, ensuring a complete rebuild of all images.
+## Community
 
-### 4. Check Status
-```bash
-pctl ps
-```
-View stack status and running containers.
+You have questions, need support and or just want to talk about GoReleaser?
 
-### 5. View Logs
-```bash
-pctl logs
-```
-Stream real-time logs from your containers.
+Here are ways to get in touch with the GoReleaser community:
 
-**Log Options**:
-- `-t, --tail N`: Show the last N lines from the end of logs (default: 50)
-- `-s, --service NAME`: Show logs from a specific service only
+[![Join Discord](https://img.shields.io/badge/Join_our_Discord_server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/RGEBtg8vQ6)
+[![Follow Twitter](https://img.shields.io/badge/follow_on_twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/goreleaser)
+[![GitHub Discussions](https://img.shields.io/badge/GITHUB_DISCUSSION-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/goreleaser/goreleaser/discussions)
 
-Examples:
-```bash
-# Show last 100 lines from all containers
-pctl logs -t 100
+You can find the links above and all others [here](https://goreleaser.com/links/).
 
-# Show logs from a specific service
-pctl logs -s web
+### Code of Conduct
 
-# Show last 20 lines from the database service
-pctl logs -s database -t 20
-```
+This project adheres to the Contributor Covenant [code of conduct](https://github.com/goreleaser/.github/blob/main/CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code.
+We appreciate your contribution.
+Please refer to our [contributing guidelines](CONTRIBUTING.md) for further information.
 
-### 6. Check Version
-```bash
-pctl version
-```
-Display version information including version number, git commit hash, build timestamp, Go version, and target platform.
+## Badges
 
-## Configuration
+[![Release](https://img.shields.io/github/release/goreleaser/goreleaser.svg?style=for-the-badge)](https://github.com/goreleaser/goreleaser/releases/latest)
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=for-the-badge)](/LICENSE.md)
+[![Build status](https://img.shields.io/github/actions/workflow/status/goreleaser/goreleaser/build.yml?style=for-the-badge&branch=main)](https://github.com/goreleaser/goreleaser/actions?workflow=build)
+[![Codecov branch](https://img.shields.io/codecov/c/github/goreleaser/goreleaser/main.svg?style=for-the-badge)](https://codecov.io/gh/goreleaser/goreleaser)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/goreleaser&style=for-the-badge)](https://artifacthub.io/packages/search?repo=goreleaser)
+[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge)](http://godoc.org/github.com/goreleaser/goreleaser)
+[![Powered By: GoReleaser](https://img.shields.io/badge/powered%20by-goreleaser-green.svg?style=for-the-badge)](https://github.com/goreleaser)
+[![Backers on Open Collective](https://opencollective.com/goreleaser/backers/badge.svg?style=for-the-badge)](https://opencollective.com/goreleaser/backers/)
+[![Sponsors on Open Collective](https://opencollective.com/goreleaser/sponsors/badge.svg?style=for-the-badge)](https://opencollective.com/goreleaser/sponsors/)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg?style=for-the-badge)](https://conventionalcommits.org)
+[![CII Best Practices](https://img.shields.io/cii/summary/5420?label=openssf%20best%20practices&style=for-the-badge)](https://bestpractices.coreinfrastructure.org/projects/5420)
 
-pctl uses a `pctl.yml` configuration file created during initialization:
+## GitHub Sponsors
 
-```yaml
-portainer_url: https://portainer.example.com
-api_token: ptr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-environment_id: 1
-stack_name: pctl_myproject
-compose_file: docker-compose.yml
-skip_tls_verify: true
-```
+High-tier sponsors of [@caarlos0](https://github.com/sponsors/caarlos0/) on GitHub:
 
-The configuration includes:
-- **portainer_url**: Your Portainer instance URL
-- **api_token**: Portainer API token (starts with `ptr_`)
-- **environment_id**: Portainer environment ID
-- **stack_name**: Name for your stack in Portainer
-- **compose_file**: Path to your Docker Compose file
-- **skip_tls_verify**: Skip TLS verification for self-hosted instances
+<a href="https://smallstep.com" target="_blank"><img width="200" src="https://github.com/goreleaser/goreleaser/assets/245435/05ade839-6652-474a-af90-da3ea67dde24"></a>
 
-## Build Configuration
+## OpenCollective
 
-When using `build:` directives in your compose file, pctl can automatically build images before deployment. Add a `build` section to your `pctl.yml`:
+### Sponsors
 
-```yaml
-build:
-  mode: remote-build        # remote-build (default) or load
-  parallel: auto            # concurrent builds (auto or number)
-  tag_format: "pctl-{{stack}}-{{service}}:{{hash}}"
-  platforms: ["linux/amd64"]  # for load mode
-  extra_build_args: {}      # global build args
-  force_build: false        # force rebuild even if unchanged
-  warn_threshold_mb: 50     # warn if context > 50MB
-```
+Does your company use goreleaser? Help keep the project bug-free and feature rich by [sponsoring the project](https://opencollective.com/goreleaser#sponsor).
 
-### Build Modes
+<a href="https://opencollective.com/goreleaser/sponsors/0/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/0/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/1/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/1/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/2/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/2/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/3/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/3/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/4/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/4/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/5/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/5/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/6/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/6/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/7/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/7/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/8/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/8/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/9/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/9/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/10/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/10/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/11/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/11/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/12/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/12/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/13/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/13/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/14/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/14/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/15/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/15/avatar"></a>
+<a href="https://opencollective.com/goreleaser/sponsors/16/website" target="_blank"><img src="https://opencollective.com/goreleaser/sponsors/16/avatar"></a>
 
-- **remote-build** (default): Builds images on the remote Docker engine via Portainer's Docker proxy. Most bandwidth-efficient.
-- **load**: Builds images locally and uploads them to the remote engine. Useful when the remote has poor internet access.
+### Backers
 
-### Example Compose with Build
+Love our work and community? [Become a backer](https://opencollective.com/goreleaser).
 
-```yaml
-version: '3.8'
-services:
-  web:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-      args:
-        NODE_ENV: production
-    ports:
-      - "3000:3000"
-  
-  api:
-    build: ./api
-    ports:
-      - "8080:8080"
-```
+<a href="https://opencollective.com/goreleaser/backers/0/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/0/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/1/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/1/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/2/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/2/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/3/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/3/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/4/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/4/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/5/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/5/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/6/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/6/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/7/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/7/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/8/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/8/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/9/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/9/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/10/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/10/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/11/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/11/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/12/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/12/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/13/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/13/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/14/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/14/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/15/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/15/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/16/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/16/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/17/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/17/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/18/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/18/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/19/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/19/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/20/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/20/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/21/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/21/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/22/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/22/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/23/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/23/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/24/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/24/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/25/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/25/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/26/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/26/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/27/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/27/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/28/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/28/avatar"></a>
+<a href="https://opencollective.com/goreleaser/backers/29/website" target="_blank"><img src="https://opencollective.com/goreleaser/backers/29/avatar"></a>
 
-When you run `pctl deploy`, it will:
-1. Detect the `build:` directives
-2. Build the images according to your build configuration
-3. Transform the compose file to use the built images
-4. Deploy the stack to Portainer
+### Contributors
 
-## Installation
+This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+<a href="https://github.com/goreleaser/goreleaser/graphs/contributors"><img src="https://opencollective.com/goreleaser/contributors.svg?width=890" /></a>
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/deviantony/pctl/releases/latest):
-
-### Linux
-```bash
-# AMD64
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_linux_amd64.tar.gz
-tar -xzf pctl_1.2.0_linux_amd64.tar.gz
-chmod +x pctl
-sudo mv pctl /usr/local/bin/
-
-# ARM64
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_linux_arm64.tar.gz
-tar -xzf pctl_1.2.0_linux_arm64.tar.gz
-chmod +x pctl
-sudo mv pctl /usr/local/bin/
-```
-
-### macOS
-```bash
-# AMD64
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_darwin_amd64.tar.gz
-tar -xzf pctl_1.2.0_darwin_amd64.tar.gz
-chmod +x pctl
-sudo mv pctl /usr/local/bin/
-
-# ARM64 (Apple Silicon)
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_darwin_arm64.tar.gz
-tar -xzf pctl_1.2.0_darwin_arm64.tar.gz
-chmod +x pctl
-sudo mv pctl /usr/local/bin/
-```
-
-### Windows
-```bash
-# AMD64
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_windows_amd64.zip
-# Extract the zip file and move pctl.exe to your PATH
-```
-
-## Development
-
-### Creating Releases
-
-Releases are automated using [GoReleaser](https://goreleaser.com/) and GitHub Actions. To create a new release:
-
-```bash
-# Create a new release (e.g., version 1.2.0)
-./scripts/release.sh 1.2.0
-
-# Dry run to see what would happen
-./scripts/release.sh 1.2.0 --dry-run
-```
-
-This will:
-1. Create a git tag `v1.2.0`
-2. Push the tag to GitHub
-3. GoReleaser automatically builds binaries for all platforms
-4. Creates a GitHub release with all binaries, checksums, and release notes
-
-See [RELEASE.md](RELEASE.md) for detailed release process documentation.
-
-## Limitations
-
-- **Docker Standalone environments only** - Full support for Kubernetes environments is planned for future versions.
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/goreleaser/goreleaser.svg?variant=adaptive)](https://starchart.cc/goreleaser/goreleaser)
