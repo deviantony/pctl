@@ -140,39 +140,39 @@ When you run `pctl deploy`, it will:
 
 ## Installation
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/deviantony/pctl/releases/tag/v1.1.0):
+Download the latest release for your platform from [GitHub Releases](https://github.com/deviantony/pctl/releases/tag/v1.1.1):
 
 ### Linux
 ```bash
 # AMD64
-wget https://github.com/deviantony/pctl/releases/download/v1.1.0/pctl_1.1.0_linux_amd64
-chmod +x pctl_1.1.0_linux_amd64
-sudo mv pctl_1.1.0_linux_amd64 /usr/local/bin/pctl
+wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_linux_amd64
+chmod +x pctl_1.1.1_linux_amd64
+sudo mv pctl_1.1.1_linux_amd64 /usr/local/bin/pctl
 
 # ARM64
-wget https://github.com/deviantony/pctl/releases/download/v1.1.0/pctl_1.1.0_linux_arm64
-chmod +x pctl_1.1.0_linux_arm64
-sudo mv pctl_1.1.0_linux_arm64 /usr/local/bin/pctl
+wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_linux_arm64
+chmod +x pctl_1.1.1_linux_arm64
+sudo mv pctl_1.1.1_linux_arm64 /usr/local/bin/pctl
 ```
 
 ### macOS
 ```bash
 # AMD64
-wget https://github.com/deviantony/pctl/releases/download/v1.1.0/pctl_1.1.0_darwin_amd64
-chmod +x pctl_1.1.0_darwin_amd64
-sudo mv pctl_1.1.0_darwin_amd64 /usr/local/bin/pctl
+wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_darwin_amd64
+chmod +x pctl_1.1.1_darwin_amd64
+sudo mv pctl_1.1.1_darwin_amd64 /usr/local/bin/pctl
 
 # ARM64 (Apple Silicon)
-wget https://github.com/deviantony/pctl/releases/download/v1.1.0/pctl_1.1.0_darwin_arm64
-chmod +x pctl_1.1.0_darwin_arm64
-sudo mv pctl_1.1.0_darwin_arm64 /usr/local/bin/pctl
+wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_darwin_arm64
+chmod +x pctl_1.1.1_darwin_arm64
+sudo mv pctl_1.1.1_darwin_arm64 /usr/local/bin/pctl
 ```
 
 ### Windows
 ```bash
 # AMD64
-wget https://github.com/deviantony/pctl/releases/download/v1.1.0/pctl_1.1.0_windows_amd64.exe
-# Move pctl_1.1.0_windows_amd64.exe to your PATH and rename to pctl.exe
+wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_windows_amd64.exe
+# Move pctl_1.1.1_windows_amd64.exe to your PATH and rename to pctl.exe
 ```
 
 ## Development
