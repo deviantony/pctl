@@ -3,6 +3,7 @@ package deploy
 import (
 	"fmt"
 
+	"github.com/deviantony/pctl/internal/build"
 	"github.com/deviantony/pctl/internal/compose"
 	"github.com/deviantony/pctl/internal/config"
 	"github.com/deviantony/pctl/internal/errors"
@@ -59,6 +60,73 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println(successStyle.Render("✓ Compose file loaded"))
 
+	// Parse compose file to check for build directives
+	composeFile, err := compose.ParseComposeFile(composeContent)
+	if err != nil {
+		return fmt.Errorf("failed to parse compose file: %w", err)
+	}
+
+	// Check if there are build directives
+	hasBuild, err := composeFile.HasBuildDirectives()
+	if err != nil {
+		return fmt.Errorf("failed to check for build directives: %w", err)
+	}
+
+	var finalComposeContent string
+	if hasBuild {
+		// Get build configuration
+		buildConfig := cfg.GetBuildConfig()
+
+		// Validate build configuration
+		if err := buildConfig.Validate(); err != nil {
+			return fmt.Errorf("invalid build configuration: %w", err)
+		}
+
+		fmt.Println(infoStyle.Render("Build directives detected, processing builds..."))
+
+		// Find services with build directives
+		servicesWithBuild, err := composeFile.FindServicesWithBuild()
+		if err != nil {
+			return fmt.Errorf("failed to find services with build directives: %w", err)
+		}
+
+		// Validate build contexts
+		if err := composeFile.ValidateBuildContexts(); err != nil {
+			return fmt.Errorf("build context validation failed: %w", err)
+		}
+
+		// Create Portainer client
+		client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
+
+		// Create build orchestrator
+		logger := build.NewSimpleBuildLogger("BUILD")
+		orchestrator := build.NewBuildOrchestrator(client, buildConfig, cfg.EnvironmentID, cfg.StackName, logger)
+
+		// Build services
+		imageTags, err := orchestrator.BuildServices(servicesWithBuild)
+		if err != nil {
+			return fmt.Errorf("build failed: %w", err)
+		}
+
+		// Transform compose file
+		transformer, err := compose.TransformComposeFile(composeContent, imageTags)
+		if err != nil {
+			return fmt.Errorf("failed to transform compose file: %w", err)
+		}
+
+		// Validate transformation
+		if err := transformer.ValidateTransformation(); err != nil {
+			return fmt.Errorf("compose transformation validation failed: %w", err)
+		}
+
+		finalComposeContent = transformer.TransformedContent
+
+		fmt.Println(successStyle.Render("✓ Build completed and compose file transformed"))
+	} else {
+		finalComposeContent = composeContent
+		fmt.Println(infoStyle.Render("No build directives found, using compose file as-is"))
+	}
+
 	// Create Portainer client
 	client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
 
@@ -94,7 +162,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	var stack *portainer.Stack
 	err = spinner.RunWithSpinner("Creating new stack...", func() error {
 		var fetchErr error
-		stack, fetchErr = client.CreateStack(cfg.StackName, composeContent, cfg.EnvironmentID)
+		stack, fetchErr = client.CreateStack(cfg.StackName, finalComposeContent, cfg.EnvironmentID)
 		return fetchErr
 	})
 	if err != nil {

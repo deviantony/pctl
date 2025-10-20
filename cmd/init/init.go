@@ -167,7 +167,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		formData.ComposeFile = config.GetDefaultComposeFile()
 	}
 
-	// Create and save configuration
+	// Create and save configuration (include default build configuration)
 	cfg := &config.Config{
 		PortainerURL:  formData.PortainerURL,
 		APIToken:      formData.APIToken,
@@ -175,6 +175,16 @@ func runInit(cmd *cobra.Command, args []string) error {
 		StackName:     formData.StackName,
 		ComposeFile:   formData.ComposeFile,
 		SkipTLSVerify: config.GetDefaultSkipTLSVerify(), // Use default value
+		Build: &config.BuildConfig{
+			Mode:            config.DefaultBuildMode,
+			NoCache:         config.DefaultBuildNoCache,
+			Parallel:        config.DefaultBuildParallel,
+			TagFormat:       config.DefaultBuildTagFormat,
+			Platforms:       []string{"linux/amd64"},
+			ExtraBuildArgs:  map[string]string{},
+			ForceBuild:      false,
+			WarnThresholdMB: config.DefaultBuildWarnThresholdMB,
+		},
 	}
 
 	if err := cfg.Save(); err != nil {

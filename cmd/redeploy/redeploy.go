@@ -3,6 +3,7 @@ package redeploy
 import (
 	"fmt"
 
+	"github.com/deviantony/pctl/internal/build"
 	"github.com/deviantony/pctl/internal/compose"
 	"github.com/deviantony/pctl/internal/config"
 	"github.com/deviantony/pctl/internal/errors"
@@ -27,6 +28,13 @@ This command will update the existing stack with the latest compose file
 and pull the latest images. The stack must already exist (created via 'pctl deploy').`,
 	RunE:         runRedeploy,
 	SilenceUsage: true,
+}
+
+// forceRebuild toggles forcing both build.ForceBuild and build.NoCache during this run
+var forceRebuild bool
+
+func init() {
+	RedeployCmd.Flags().BoolVarP(&forceRebuild, "force-rebuild", "f", false, "Force rebuild images (sets force_build and no_cache for this run)")
 }
 
 func runRedeploy(cmd *cobra.Command, args []string) error {
@@ -58,6 +66,79 @@ func runRedeploy(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read compose file: %w", err)
 	}
 	fmt.Println(successStyle.Render("✓ Compose file loaded"))
+
+	// Parse compose file to check for build directives
+	composeFile, err := compose.ParseComposeFile(composeContent)
+	if err != nil {
+		return fmt.Errorf("failed to parse compose file: %w", err)
+	}
+
+	// Check if there are build directives
+	hasBuild, err := composeFile.HasBuildDirectives()
+	if err != nil {
+		return fmt.Errorf("failed to check for build directives: %w", err)
+	}
+
+	var finalComposeContent string
+	if hasBuild {
+		// Get build configuration
+		buildConfig := cfg.GetBuildConfig()
+
+		// Apply CLI override if requested
+		if forceRebuild {
+			buildConfig.ForceBuild = true
+			fmt.Println(infoStyle.Render("Force rebuild enabled: force_build=true (no-cache)"))
+		}
+
+		// Validate build configuration
+		if err := buildConfig.Validate(); err != nil {
+			return fmt.Errorf("invalid build configuration: %w", err)
+		}
+
+		fmt.Println(infoStyle.Render("Build directives detected, processing builds..."))
+
+		// Find services with build directives
+		servicesWithBuild, err := composeFile.FindServicesWithBuild()
+		if err != nil {
+			return fmt.Errorf("failed to find services with build directives: %w", err)
+		}
+
+		// Validate build contexts
+		if err := composeFile.ValidateBuildContexts(); err != nil {
+			return fmt.Errorf("build context validation failed: %w", err)
+		}
+
+		// Create Portainer client
+		client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
+
+		// Create build orchestrator
+		logger := build.NewSimpleBuildLogger("BUILD")
+		orchestrator := build.NewBuildOrchestrator(client, buildConfig, cfg.EnvironmentID, cfg.StackName, logger)
+
+		// Build services
+		imageTags, err := orchestrator.BuildServices(servicesWithBuild)
+		if err != nil {
+			return fmt.Errorf("build failed: %w", err)
+		}
+
+		// Transform compose file
+		transformer, err := compose.TransformComposeFile(composeContent, imageTags)
+		if err != nil {
+			return fmt.Errorf("failed to transform compose file: %w", err)
+		}
+
+		// Validate transformation
+		if err := transformer.ValidateTransformation(); err != nil {
+			return fmt.Errorf("compose transformation validation failed: %w", err)
+		}
+
+		finalComposeContent = transformer.TransformedContent
+
+		fmt.Println(successStyle.Render("✓ Build completed and compose file transformed"))
+	} else {
+		finalComposeContent = composeContent
+		fmt.Println(infoStyle.Render("No build directives found, using compose file as-is"))
+	}
 
 	// Create Portainer client
 	client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
@@ -93,8 +174,9 @@ func runRedeploy(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Found existing stack with ID: %d\n", existingStack.ID)
 
 	// Update existing stack
+	pullImages := !hasBuild // Don't pull images if we just built them
 	err = spinner.RunWithSpinner("Updating stack...", func() error {
-		return client.UpdateStack(existingStack.ID, composeContent, true, cfg.EnvironmentID) // Pull images = true
+		return client.UpdateStack(existingStack.ID, finalComposeContent, pullImages, cfg.EnvironmentID)
 	})
 	if err != nil {
 		fmt.Println()

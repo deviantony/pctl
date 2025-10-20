@@ -23,6 +23,8 @@ pctl deploy
 ```
 Deploy your Docker Compose stack to Portainer. The tool reads your `docker-compose.yml` file and creates a new stack.
 
+**Build Support**: If your compose file contains `build:` directives, pctl will automatically build the images before deployment. See the [Build Configuration](#build-configuration) section for details.
+
 ### 3. Update Existing Stack
 ```bash
 pctl redeploy
@@ -61,6 +63,53 @@ The configuration includes:
 - **stack_name**: Name for your stack in Portainer
 - **compose_file**: Path to your Docker Compose file
 - **skip_tls_verify**: Skip TLS verification for self-hosted instances
+
+## Build Configuration
+
+When using `build:` directives in your compose file, pctl can automatically build images before deployment. Add a `build` section to your `pctl.yml`:
+
+```yaml
+build:
+  mode: remote-build        # remote-build (default) or load
+  no_cache: false           # disable build cache
+  parallel: auto            # concurrent builds (auto or number)
+  tag_format: "pctl-{{stack}}-{{service}}:{{hash}}"
+  platforms: ["linux/amd64"]  # for load mode
+  extra_build_args: {}      # global build args
+  force_build: false        # force rebuild even if unchanged
+  warn_threshold_mb: 50     # warn if context > 50MB
+```
+
+### Build Modes
+
+- **remote-build** (default): Builds images on the remote Docker engine via Portainer's Docker proxy. Most bandwidth-efficient.
+- **load**: Builds images locally and uploads them to the remote engine. Useful when the remote has poor internet access.
+
+### Example Compose with Build
+
+```yaml
+version: '3.8'
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    ports:
+      - "3000:3000"
+  
+  api:
+    build: ./api
+    ports:
+      - "8080:8080"
+```
+
+When you run `pctl deploy`, it will:
+1. Detect the `build:` directives
+2. Build the images according to your build configuration
+3. Transform the compose file to use the built images
+4. Deploy the stack to Portainer
 
 ## Installation
 
