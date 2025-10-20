@@ -34,16 +34,16 @@ show_usage() {
     echo "Usage: $0 <version> [options]"
     echo ""
     echo "Arguments:"
-    echo "  version    Version number (e.g., 1.2.0, 2.0.0-beta.1)"
+    echo "  version    Version number (e.g., 1.1.1, 2.0.0-beta.1)"
     echo ""
     echo "Options:"
     echo "  --dry-run  Show what would be done without actually doing it"
     echo "  --help     Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 1.2.0"
+    echo "  $0 1.1.1"
     echo "  $0 2.0.0-beta.1"
-    echo "  $0 1.2.0 --dry-run"
+    echo "  $0 1.1.1 --dry-run"
     echo ""
     echo "This script will:"
     echo "  1. Check that you're on the main branch"
@@ -94,7 +94,7 @@ fi
 # Validate version format (basic check)
 if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
     print_warning "Version format might be invalid: $VERSION"
-    print_warning "Expected format: X.Y.Z or X.Y.Z-suffix (e.g., 1.2.0, 2.0.0-beta.1)"
+    print_warning "Expected format: X.Y.Z or X.Y.Z-suffix (e.g., 1.1.1, 2.0.0-beta.1)"
     read -p "Continue anyway? (y/N): " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then

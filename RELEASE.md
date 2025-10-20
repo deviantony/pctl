@@ -7,11 +7,11 @@ This document explains how to create new releases for pctl using [GoReleaser](ht
 To create a new release, simply run:
 
 ```bash
-./scripts/release.sh 1.2.0
+./scripts/release.sh 1.1.1
 ```
 
 This will:
-1. Create a git tag `v1.2.0`
+1. Create a git tag `v1.1.1`
 2. Push the tag to GitHub
 3. Trigger the automated GoReleaser workflow
 4. Build binaries for all platforms
@@ -53,8 +53,8 @@ If you prefer to create releases manually:
 
 1. **Create and push a tag:**
    ```bash
-   git tag -a v1.2.0 -m "Release 1.2.0"
-   git push origin v1.2.0
+   git tag -a v1.1.1 -m "Release 1.1.1"
+   git push origin v1.1.1
    ```
 
 2. **Monitor the workflow:**
@@ -70,9 +70,9 @@ Follow [Semantic Versioning](https://semver.org/):
 - **PATCH** (1.1.1): Bug fixes, backward compatible
 
 For pre-releases, use suffixes:
-- `1.2.0-beta.1`
-- `1.2.0-rc.1`
-- `1.2.0-alpha.1`
+- `1.1.1-beta.1`
+- `1.1.1-rc.1`
+- `1.1.1-alpha.1`
 
 ## Script Options
 
@@ -80,13 +80,13 @@ The release script supports several options:
 
 ```bash
 # Create a release
-./scripts/release.sh 1.2.0
+./scripts/release.sh 1.1.1
 
 # Dry run (see what would happen)
-./scripts/release.sh 1.2.0 --dry-run
+./scripts/release.sh 1.1.1 --dry-run
 
 # Pre-release
-./scripts/release.sh 1.2.0-beta.1
+./scripts/release.sh 1.1.1-beta.1
 
 # Show help
 ./scripts/release.sh --help
@@ -96,8 +96,8 @@ The release script supports several options:
 
 ### Tag Already Exists
 If you get "Tag already exists", you can:
-- Delete the local tag: `git tag -d v1.2.0`
-- Delete the remote tag: `git push origin --delete v1.2.0`
+- Delete the local tag: `git tag -d v1.1.1`
+- Delete the remote tag: `git push origin --delete v1.1.1`
 - Or use a different version number
 
 ### Workflow Fails
