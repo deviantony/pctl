@@ -12,7 +12,6 @@ import (
 // BuildConfig represents the build configuration
 type BuildConfig struct {
 	Mode            string            `yaml:"mode"`              // remote-build | load
-	NoCache         bool              `yaml:"no_cache"`          // pass through to builds
 	Parallel        string            `yaml:"parallel"`          // auto | number
 	TagFormat       string            `yaml:"tag_format"`        // template with {{stack}}, {{service}}, {{hash}}, {{timestamp}}
 	Platforms       []string          `yaml:"platforms"`         // used for load mode local builds
@@ -45,7 +44,6 @@ const (
 
 	// Default build configuration values
 	DefaultBuildMode            = BuildModeRemoteBuild
-	DefaultBuildNoCache         = false
 	DefaultBuildParallel        = BuildParallelAuto
 	DefaultBuildTagFormat       = "pctl-{{stack}}-{{service}}:{{hash}}"
 	DefaultBuildWarnThresholdMB = 50
@@ -150,7 +148,6 @@ func (c *Config) GetBuildConfig() *BuildConfig {
 	if c.Build == nil {
 		return &BuildConfig{
 			Mode:            DefaultBuildMode,
-			NoCache:         DefaultBuildNoCache,
 			Parallel:        DefaultBuildParallel,
 			TagFormat:       DefaultBuildTagFormat,
 			Platforms:       []string{"linux/amd64"},

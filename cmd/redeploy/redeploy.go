@@ -30,11 +30,11 @@ and pull the latest images. The stack must already exist (created via 'pctl depl
 	SilenceUsage: true,
 }
 
-// forceRebuild toggles forcing both build.ForceBuild and build.NoCache during this run
+// forceRebuild toggles forcing build.ForceBuild (which includes no-cache behavior) during this run
 var forceRebuild bool
 
 func init() {
-	RedeployCmd.Flags().BoolVarP(&forceRebuild, "force-rebuild", "f", false, "Force rebuild images (sets force_build and no_cache for this run)")
+	RedeployCmd.Flags().BoolVarP(&forceRebuild, "force-rebuild", "f", false, "Force rebuild images (sets force_build=true, which includes no-cache behavior)")
 }
 
 func runRedeploy(cmd *cobra.Command, args []string) error {

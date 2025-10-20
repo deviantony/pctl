@@ -290,7 +290,7 @@ type BuildOptions struct {
 	Dockerfile string            // relative to context
 	BuildArgs  map[string]string // optional
 	Target     string            // optional
-	NoCache    bool              // optional
+	NoCache    bool              // optional - set to true to disable build cache
 }
 
 // BuildImage builds an image using the Docker Build API via Portainer proxy

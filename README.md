@@ -35,7 +35,7 @@ Update an existing stack with latest images.
 ```bash
 pctl redeploy -f
 ```
-This sets both `force_build` and `no_cache` for this run, ensuring a complete rebuild of all images.
+This sets `force_build=true` for this run, which includes no-cache behavior, ensuring a complete rebuild of all images.
 
 ### 4. Check Status
 ```bash
@@ -99,7 +99,6 @@ When using `build:` directives in your compose file, pctl can automatically buil
 ```yaml
 build:
   mode: remote-build        # remote-build (default) or load
-  no_cache: false           # disable build cache
   parallel: auto            # concurrent builds (auto or number)
   tag_format: "pctl-{{stack}}-{{service}}:{{hash}}"
   platforms: ["linux/amd64"]  # for load mode
