@@ -175,6 +175,28 @@ wget https://github.com/deviantony/pctl/releases/download/v1.1.0/pctl_1.1.0_wind
 # Move pctl_1.1.0_windows_amd64.exe to your PATH and rename to pctl.exe
 ```
 
+## Development
+
+### Creating Releases
+
+Releases are automated using GitHub Actions. To create a new release:
+
+```bash
+# Create a new release (e.g., version 1.2.0)
+./scripts/release.sh 1.2.0
+
+# Dry run to see what would happen
+./scripts/release.sh 1.2.0 --dry-run
+```
+
+This will:
+1. Create a git tag `v1.2.0`
+2. Push the tag to GitHub
+3. Automatically build binaries for all platforms
+4. Create a GitHub release with all binaries and release notes
+
+See [RELEASE.md](RELEASE.md) for detailed release process documentation.
+
 ## Limitations
 
 - **Docker Standalone environments only** - Full support for Kubernetes environments is planned for future versions.
