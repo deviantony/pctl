@@ -177,7 +177,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 		SkipTLSVerify: config.GetDefaultSkipTLSVerify(), // Use default value
 		Build: &config.BuildConfig{
 			Mode:            config.DefaultBuildMode,
-			NoCache:         config.DefaultBuildNoCache,
 			Parallel:        config.DefaultBuildParallel,
 			TagFormat:       config.DefaultBuildTagFormat,
 			Platforms:       []string{"linux/amd64"},
