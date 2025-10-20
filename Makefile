@@ -120,7 +120,7 @@ help:
 	@echo "  VERSION       - Version to embed in binary (default: dev)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make build VERSION=1.0.0"
+	@echo "  make build VERSION=1.1.0"
 	@echo "  make build-all"
 	@echo "  make test-coverage"
 	@echo "  ./build/pctl version"
