@@ -1,0 +1,74 @@
+# GoReleaser configuration for pctl
+# See https://goreleaser.com/ for more information
+
+# Project name and metadata
+project_name: pctl
+
+# Build configuration
+builds:
+  - id: pctl
+    main: .
+    binary: pctl
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/deviantony/pctl/cmd/version.Version={{.Version}}
+      - -X github.com/deviantony/pctl/cmd/version.Commit={{.Commit}}
+      - -X github.com/deviantony/pctl/cmd/version.BuildTime={{.Date}}
+    env:
+      - CGO_ENABLED=0
+
+# Archive configuration
+archives:
+  - id: pctl
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+      - REQUIREMENTS.md
+    format: tar.gz
+
+# Checksums
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+# Release configuration
+release:
+  github:
+    owner: deviantony
+    name: pctl
+  draft: false
+  prerelease: auto
+  mode: replace
+  name_template: "Release {{ .Tag }}"
+  header: |
+    ## What's Changed
+    
+    {{ range .Commits -}}
+    - {{ .Subject }} ({{ .Hash.Short }})
+    {{ end }}
+    
+    **Full Changelog**: https://github.com/{{ .Repo }}/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+# Changelog configuration
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^build:'
+      - '^chore:'
+
+# No additional package managers configured

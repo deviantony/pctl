@@ -140,46 +140,50 @@ When you run `pctl deploy`, it will:
 
 ## Installation
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/deviantony/pctl/releases/tag/v1.1.1):
+Download the latest release for your platform from [GitHub Releases](https://github.com/deviantony/pctl/releases/latest):
 
 ### Linux
 ```bash
 # AMD64
-wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_linux_amd64
-chmod +x pctl_1.1.1_linux_amd64
-sudo mv pctl_1.1.1_linux_amd64 /usr/local/bin/pctl
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_linux_amd64.tar.gz
+tar -xzf pctl_1.2.0_linux_amd64.tar.gz
+chmod +x pctl
+sudo mv pctl /usr/local/bin/
 
 # ARM64
-wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_linux_arm64
-chmod +x pctl_1.1.1_linux_arm64
-sudo mv pctl_1.1.1_linux_arm64 /usr/local/bin/pctl
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_linux_arm64.tar.gz
+tar -xzf pctl_1.2.0_linux_arm64.tar.gz
+chmod +x pctl
+sudo mv pctl /usr/local/bin/
 ```
 
 ### macOS
 ```bash
 # AMD64
-wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_darwin_amd64
-chmod +x pctl_1.1.1_darwin_amd64
-sudo mv pctl_1.1.1_darwin_amd64 /usr/local/bin/pctl
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_darwin_amd64.tar.gz
+tar -xzf pctl_1.2.0_darwin_amd64.tar.gz
+chmod +x pctl
+sudo mv pctl /usr/local/bin/
 
 # ARM64 (Apple Silicon)
-wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_darwin_arm64
-chmod +x pctl_1.1.1_darwin_arm64
-sudo mv pctl_1.1.1_darwin_arm64 /usr/local/bin/pctl
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_darwin_arm64.tar.gz
+tar -xzf pctl_1.2.0_darwin_arm64.tar.gz
+chmod +x pctl
+sudo mv pctl /usr/local/bin/
 ```
 
 ### Windows
 ```bash
 # AMD64
-wget https://github.com/deviantony/pctl/releases/download/v1.1.1/pctl_1.1.1_windows_amd64.exe
-# Move pctl_1.1.1_windows_amd64.exe to your PATH and rename to pctl.exe
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.0_windows_amd64.zip
+# Extract the zip file and move pctl.exe to your PATH
 ```
 
 ## Development
 
 ### Creating Releases
 
-Releases are automated using GitHub Actions. To create a new release:
+Releases are automated using [GoReleaser](https://goreleaser.com/) and GitHub Actions. To create a new release:
 
 ```bash
 # Create a new release (e.g., version 1.2.0)
@@ -192,8 +196,8 @@ Releases are automated using GitHub Actions. To create a new release:
 This will:
 1. Create a git tag `v1.2.0`
 2. Push the tag to GitHub
-3. Automatically build binaries for all platforms
-4. Create a GitHub release with all binaries and release notes
+3. GoReleaser automatically builds binaries for all platforms
+4. Creates a GitHub release with all binaries, checksums, and release notes
 
 See [RELEASE.md](RELEASE.md) for detailed release process documentation.
 

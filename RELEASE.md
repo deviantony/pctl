@@ -1,6 +1,6 @@
 # Release Process
 
-This document explains how to create new releases for pctl using the automated GitHub Actions workflow.
+This document explains how to create new releases for pctl using [GoReleaser](https://goreleaser.com/) and automated GitHub Actions.
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ To create a new release, simply run:
 This will:
 1. Create a git tag `v1.2.0`
 2. Push the tag to GitHub
-3. Trigger the automated release workflow
+3. Trigger the automated GoReleaser workflow
 4. Build binaries for all platforms
 5. Create a GitHub release with all binaries and release notes
 
@@ -25,24 +25,24 @@ This will:
 
 ## Release Workflow
 
-The automated release process includes:
+The automated release process uses [GoReleaser](https://goreleaser.com/) and includes:
 
 ### 1. Build Process
-- Builds binaries for multiple platforms:
-  - Linux AMD64 (`pctl-linux-amd64`)
-  - Linux ARM64 (`pctl-linux-arm64`)
-  - macOS AMD64 (`pctl-darwin-amd64`)
-  - macOS ARM64 (`pctl-darwin-arm64`)
-  - Windows AMD64 (`pctl-windows-amd64.exe`)
+GoReleaser builds binaries for multiple platforms:
+- Linux AMD64 (`pctl_linux_amd64`)
+- Linux ARM64 (`pctl_linux_arm64`)
+- macOS AMD64 (`pctl_darwin_amd64`)
+- macOS ARM64 (`pctl_darwin_arm64`)
+- Windows AMD64 (`pctl_windows_amd64.exe`)
 
 ### 2. Release Creation
 - Creates a GitHub release with the tag name
 - Generates automatic release notes from git commits
-- Uploads all built binaries
-- Creates and uploads checksums file
+- Uploads all built binaries and archives
+- Creates and uploads SHA256 checksums
 
 ### 3. Release Notes
-The workflow automatically generates release notes including:
+GoReleaser automatically generates release notes including:
 - List of commits since the last release
 - Installation instructions for all platforms
 - Link to the full changelog
