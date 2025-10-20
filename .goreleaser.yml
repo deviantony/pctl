@@ -51,12 +51,6 @@ release:
   prerelease: auto
   mode: replace
   name_template: "Release {{ .Tag }}"
-  header: |
-    ## What's Changed
-    
-    {{ .Changelog }}
-    
-    **Full Changelog**: https://github.com/{{ .Repo }}/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 # Changelog configuration
 changelog:
