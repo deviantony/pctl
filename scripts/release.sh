@@ -146,7 +146,7 @@ print_success "All checks passed!"
 
 if [ "$DRY_RUN" = true ]; then
     print_status "DRY RUN - Would execute:"
-    echo "  git tag -a $TAG_NAME -m \"Release $VERSION\""
+    echo "  git tag -s -a $TAG_NAME -m \"Release $VERSION\""
     echo "  git push origin $TAG_NAME"
     echo ""
     print_status "After pushing the tag, GitHub Actions will automatically:"
@@ -157,7 +157,7 @@ if [ "$DRY_RUN" = true ]; then
 else
     # Create and push tag
     print_status "Creating tag $TAG_NAME..."
-    git tag -a "$TAG_NAME" -m "Release $VERSION"
+    git tag -s -a "$TAG_NAME" -m "Release $VERSION"
     
     print_status "Pushing tag to origin..."
     git push origin "$TAG_NAME"
