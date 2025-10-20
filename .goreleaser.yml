@@ -54,9 +54,7 @@ release:
   header: |
     ## What's Changed
     
-    {{ range .Commits -}}
-    - {{ .Subject }} ({{ .Hash.Short }})
-    {{ end }}
+    {{ .Changelog }}
     
     **Full Changelog**: https://github.com/{{ .Repo }}/compare/{{ .PreviousTag }}...{{ .Tag }}
 
