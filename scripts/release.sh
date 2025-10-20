@@ -155,6 +155,24 @@ if [ "$DRY_RUN" = true ]; then
     echo "  - Upload all binaries and checksums"
     echo "  - Generate release notes"
 else
+    # Update README with new version
+    print_status "Updating README with version $VERSION..."
+    if [ -f "README.md" ]; then
+        # Update all version references in README.md
+        sed -i "s/pctl_[0-9]\+\.[0-9]\+\.[0-9]\+_/pctl_${VERSION}_/g" README.md
+        
+        # Check if any changes were made
+        if git diff --quiet README.md; then
+            print_status "No README changes needed"
+        else
+            print_status "README updated with version $VERSION"
+            git add README.md
+            git commit -m "docs: update installation instructions to v$VERSION"
+        fi
+    else
+        print_warning "README.md not found, skipping version update"
+    fi
+    
     # Create and push tag
     print_status "Creating tag $TAG_NAME..."
     git tag -s -a "$TAG_NAME" -m "Release $VERSION"
