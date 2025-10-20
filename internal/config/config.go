@@ -9,19 +9,46 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// BuildConfig represents the build configuration
+type BuildConfig struct {
+	Mode            string            `yaml:"mode"`              // remote-build | load
+	NoCache         bool              `yaml:"no_cache"`          // pass through to builds
+	Parallel        string            `yaml:"parallel"`          // auto | number
+	TagFormat       string            `yaml:"tag_format"`        // template with {{stack}}, {{service}}, {{hash}}, {{timestamp}}
+	Platforms       []string          `yaml:"platforms"`         // used for load mode local builds
+	ExtraBuildArgs  map[string]string `yaml:"extra_build_args"`  // optional global overrides
+	ForceBuild      bool              `yaml:"force_build"`       // force rebuild even if unchanged
+	WarnThresholdMB int               `yaml:"warn_threshold_mb"` // WARN if tar/image stream exceeds this size
+}
+
 // Config represents the pctl configuration structure
 type Config struct {
-	PortainerURL     string `yaml:"portainer_url"`
-	APIToken         string `yaml:"api_token"`
-	EnvironmentID    int    `yaml:"environment_id"`
-	StackName        string `yaml:"stack_name"`
-	ComposeFile      string `yaml:"compose_file"`
-	SkipTLSVerify    bool   `yaml:"skip_tls_verify"`
+	PortainerURL  string       `yaml:"portainer_url"`
+	APIToken      string       `yaml:"api_token"`
+	EnvironmentID int          `yaml:"environment_id"`
+	StackName     string       `yaml:"stack_name"`
+	ComposeFile   string       `yaml:"compose_file"`
+	SkipTLSVerify bool         `yaml:"skip_tls_verify"`
+	Build         *BuildConfig `yaml:"build,omitempty"`
 }
 
 const (
 	ConfigFileName     = "pctl.yml"
 	DefaultComposeFile = "docker-compose.yml"
+
+	// Build mode constants
+	BuildModeRemoteBuild = "remote-build"
+	BuildModeLoad        = "load"
+
+	// Build parallel constants
+	BuildParallelAuto = "auto"
+
+	// Default build configuration values
+	DefaultBuildMode            = BuildModeRemoteBuild
+	DefaultBuildNoCache         = false
+	DefaultBuildParallel        = BuildParallelAuto
+	DefaultBuildTagFormat       = "pctl-{{stack}}-{{service}}:{{hash}}"
+	DefaultBuildWarnThresholdMB = 50
 )
 
 // Load reads and parses the pctl.yml configuration file
@@ -65,23 +92,30 @@ func (c *Config) Validate() error {
 	if c.PortainerURL == "" {
 		return fmt.Errorf("portainer_url is required")
 	}
-	
+
 	if c.APIToken == "" {
 		return fmt.Errorf("api_token is required")
 	}
-	
+
 	if c.EnvironmentID == 0 {
 		return fmt.Errorf("environment_id is required")
 	}
-	
+
 	if c.StackName == "" {
 		return fmt.Errorf("stack_name is required")
 	}
-	
+
 	if c.ComposeFile == "" {
 		return fmt.Errorf("compose_file is required")
 	}
-	
+
+	// Validate build configuration if present
+	if c.Build != nil {
+		if err := c.Build.Validate(); err != nil {
+			return fmt.Errorf("invalid build configuration: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -109,4 +143,64 @@ func GetDefaultStackName() string {
 // GetDefaultComposeFile returns the default compose file path
 func GetDefaultComposeFile() string {
 	return DefaultComposeFile
+}
+
+// GetBuildConfig returns the build configuration with defaults applied
+func (c *Config) GetBuildConfig() *BuildConfig {
+	if c.Build == nil {
+		return &BuildConfig{
+			Mode:            DefaultBuildMode,
+			NoCache:         DefaultBuildNoCache,
+			Parallel:        DefaultBuildParallel,
+			TagFormat:       DefaultBuildTagFormat,
+			Platforms:       []string{"linux/amd64"},
+			ExtraBuildArgs:  make(map[string]string),
+			ForceBuild:      false,
+			WarnThresholdMB: DefaultBuildWarnThresholdMB,
+		}
+	}
+
+	// Apply defaults for missing fields
+	build := *c.Build // Copy the struct
+
+	if build.Mode == "" {
+		build.Mode = DefaultBuildMode
+	}
+	if build.Parallel == "" {
+		build.Parallel = DefaultBuildParallel
+	}
+	if build.TagFormat == "" {
+		build.TagFormat = DefaultBuildTagFormat
+	}
+	if len(build.Platforms) == 0 {
+		build.Platforms = []string{"linux/amd64"}
+	}
+	if build.ExtraBuildArgs == nil {
+		build.ExtraBuildArgs = make(map[string]string)
+	}
+	if build.WarnThresholdMB == 0 {
+		build.WarnThresholdMB = DefaultBuildWarnThresholdMB
+	}
+
+	return &build
+}
+
+// ValidateBuildConfig validates the build configuration
+func (bc *BuildConfig) Validate() error {
+	if bc.Mode != BuildModeRemoteBuild && bc.Mode != BuildModeLoad {
+		return fmt.Errorf("invalid build mode '%s', must be '%s' or '%s'", bc.Mode, BuildModeRemoteBuild, BuildModeLoad)
+	}
+
+	if bc.Parallel != BuildParallelAuto {
+		// If not "auto", it should be a positive integer
+		if bc.Parallel == "" || bc.Parallel == "0" {
+			return fmt.Errorf("invalid parallel value '%s', must be 'auto' or a positive integer", bc.Parallel)
+		}
+	}
+
+	if bc.WarnThresholdMB < 0 {
+		return fmt.Errorf("warn_threshold_mb must be non-negative, got %d", bc.WarnThresholdMB)
+	}
+
+	return nil
 }

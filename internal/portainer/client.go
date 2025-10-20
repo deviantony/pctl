@@ -1,6 +1,7 @@
 package portainer
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -281,6 +282,144 @@ func (c *Client) GetContainerLogs(environmentID int, containerID string, tail in
 	}
 
 	return string(body), nil
+}
+
+// BuildOptions represents options for building an image
+type BuildOptions struct {
+	Tag        string
+	Dockerfile string            // relative to context
+	BuildArgs  map[string]string // optional
+	Target     string            // optional
+	NoCache    bool              // optional
+}
+
+// BuildImage builds an image using the Docker Build API via Portainer proxy
+func (c *Client) BuildImage(environmentID int, ctxTar io.Reader, opts BuildOptions, onLine func(string)) error {
+	q := url.Values{}
+	if opts.Tag != "" {
+		q.Set("t", opts.Tag)
+	}
+	if opts.Dockerfile != "" {
+		q.Set("dockerfile", opts.Dockerfile)
+	}
+	if len(opts.BuildArgs) > 0 {
+		b, _ := json.Marshal(opts.BuildArgs)
+		q.Set("buildargs", string(b))
+	}
+	if opts.Target != "" {
+		q.Set("target", opts.Target)
+	}
+	if opts.NoCache {
+		q.Set("nocache", "true")
+	}
+
+	endpoint := fmt.Sprintf("/api/endpoints/%d/docker/build?%s", environmentID, q.Encode())
+
+	req, err := c.newRequest("POST", endpoint, ctxTar)
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-tar")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("build call: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode/100 != 2 {
+		return c.handleErrorResponse(resp)
+	}
+
+	// Stream JSON lines from the build
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if onLine != nil {
+			onLine(line)
+		}
+	}
+	return scanner.Err()
+}
+
+// LoadImage loads an image tar into the Docker engine via Portainer proxy
+func (c *Client) LoadImage(environmentID int, imageTar io.Reader, onProgress func(string)) error {
+	endpoint := fmt.Sprintf("/api/endpoints/%d/docker/images/load", environmentID)
+
+	req, err := c.newRequest("POST", endpoint, imageTar)
+	if err != nil {
+		return fmt.Errorf("load request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-tar")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("load call: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode/100 != 2 {
+		return c.handleErrorResponse(resp)
+	}
+
+	// Stream response for progress updates
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if onProgress != nil {
+			onProgress(line)
+		}
+	}
+	return scanner.Err()
+}
+
+// GetDockerInfo retrieves Docker engine information via Portainer proxy
+func (c *Client) GetDockerInfo(environmentID int) (map[string]interface{}, error) {
+	endpoint := fmt.Sprintf("/api/endpoints/%d/docker/info", environmentID)
+	req, err := c.newRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, c.handleErrorResponse(resp)
+	}
+
+	var info map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return info, nil
+}
+
+// ImageExists checks if an image exists on the remote Docker engine
+func (c *Client) ImageExists(environmentID int, imageTag string) (bool, error) {
+	endpoint := fmt.Sprintf("/api/endpoints/%d/docker/images/%s/json", environmentID, imageTag)
+	req, err := c.newRequest("GET", endpoint, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		return true, nil
+	} else if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	} else {
+		return false, c.handleErrorResponse(resp)
+	}
 }
 
 // newRequest creates a new HTTP request with proper headers

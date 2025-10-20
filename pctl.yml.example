@@ -31,6 +31,60 @@ compose_file: docker-compose.yml
 # Default: true
 skip_tls_verify: true
 
+# Build configuration (optional)
+# Controls how Docker images are built when using 'build:' directives in compose files
+# This section is only used when your compose file contains services with 'build:' directives
+build:
+  # Build mode: 'remote-build' (default) or 'load'
+  # remote-build: builds on the remote Docker engine via Portainer proxy (bandwidth efficient)
+  #   - Best for: Most use cases, minimal bandwidth usage, leverages remote build cache
+  #   - Use when: Remote has good internet access to pull base images
+  # load: builds locally and uploads image tars to remote engine
+  #   - Best for: Air-gapped environments, poor remote internet, specific local build requirements
+  #   - Use when: Remote cannot pull base images or you need local build tools
+  mode: remote-build
+  
+  # Parallel builds: 'auto' (derive from remote CPU) or a number
+  # 'auto': Automatically determines parallelism based on remote Docker engine CPU count
+  # Number: Explicitly set the number of concurrent builds (e.g., 2, 4, 8)
+  # Use 'auto' for optimal performance, or set a number to limit resource usage
+  parallel: auto
+  
+  # Image tag format template
+  # Available variables: {{stack}}, {{service}}, {{hash}}, {{timestamp}}
+  # {{stack}}: Replaced with the stack name from pctl.yml
+  # {{service}}: Replaced with the service name from compose file
+  # {{hash}}: Replaced with content hash (enables build skipping when unchanged)
+  # {{timestamp}}: Replaced with Unix timestamp (always unique, forces rebuild)
+  # Examples:
+  #   "pctl-{{stack}}-{{service}}:{{hash}}" - Default, enables caching
+  #   "{{stack}}/{{service}}:{{timestamp}}" - Always unique, no caching
+  tag_format: "pctl-{{stack}}-{{service}}:{{hash}}"
+  
+  # Target platforms for load mode (when building locally)
+  # Only used when mode is 'load' - specifies which platforms to build for
+  # Common values: ["linux/amd64"], ["linux/arm64"], ["linux/amd64", "linux/arm64"]
+  # Use ["linux/amd64"] for most servers, add arm64 for ARM-based servers
+  platforms: ["linux/amd64"]
+  
+  # Global build arguments (merged with compose build.args)
+  # These build args are added to ALL services with build directives
+  # Use for: Common environment variables, shared secrets, global configuration
+  # Example: { "NODE_ENV": "production", "BUILD_VERSION": "1.0.0" }
+  extra_build_args: {}
+  
+  # Force rebuild even if content hash indicates no change (also disables cache)
+  # Set to true to always rebuild images and pass --no-cache to builds
+  # Use when: You want completely fresh builds or to debug build issues
+  # Note: This defeats the purpose of content-hash based caching and may be slower
+  force_build: false
+  
+  # Warning threshold for context tar or image size (MB)
+  # pctl will emit a warning if the build context or image exceeds this size
+  # Use to: Monitor and optimize build context size, avoid accidentally including large files
+  # Recommended: 50-100MB for most projects, increase for projects with large dependencies
+  warn_threshold_mb: 50
+
 # Example configurations for different scenarios:
 
 # Production setup with valid certificates:
