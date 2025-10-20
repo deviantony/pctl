@@ -142,39 +142,40 @@ When you run `pctl deploy`, it will:
 
 Download the latest release for your platform from [GitHub Releases](https://github.com/deviantony/pctl/releases/latest):
 
-### Linux
+### Linux AMD64
 ```bash
-# AMD64
 wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.1.1_linux_amd64.tar.gz
 tar -xzf pctl_1.1.1_linux_amd64.tar.gz
 chmod +x pctl
 sudo mv pctl /usr/local/bin/
+```
 
-# ARM64
+### Linux ARM64
+```bash
 wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.1.1_linux_arm64.tar.gz
 tar -xzf pctl_1.1.1_linux_arm64.tar.gz
 chmod +x pctl
 sudo mv pctl /usr/local/bin/
 ```
 
-### macOS
+### macOS AMD64
 ```bash
-# AMD64
 wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.1.1_darwin_amd64.tar.gz
 tar -xzf pctl_1.1.1_darwin_amd64.tar.gz
 chmod +x pctl
 sudo mv pctl /usr/local/bin/
+```
 
-# ARM64 (Apple Silicon)
+### macOS ARM64 (Apple Silicon)
+```bash
 wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.1.1_darwin_arm64.tar.gz
 tar -xzf pctl_1.1.1_darwin_arm64.tar.gz
 chmod +x pctl
 sudo mv pctl /usr/local/bin/
 ```
 
-### Windows
+### Windows AMD64
 ```bash
-# AMD64
 wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.1.1_windows_amd64.zip
 # Extract the zip file and move pctl.exe to your PATH
 ```
