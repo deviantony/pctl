@@ -31,6 +31,12 @@ pctl redeploy
 ```
 Update an existing stack with latest images.
 
+**Force Rebuild**: Use the `-f` or `--force-rebuild` flag to force rebuild images even if they haven't changed:
+```bash
+pctl redeploy -f
+```
+This sets both `force_build` and `no_cache` for this run, ensuring a complete rebuild of all images.
+
 ### 4. Check Status
 ```bash
 pctl ps
@@ -42,6 +48,28 @@ View stack status and running containers.
 pctl logs
 ```
 Stream real-time logs from your containers.
+
+**Log Options**:
+- `-t, --tail N`: Show the last N lines from the end of logs (default: 50)
+- `-s, --service NAME`: Show logs from a specific service only
+
+Examples:
+```bash
+# Show last 100 lines from all containers
+pctl logs -t 100
+
+# Show logs from a specific service
+pctl logs -s web
+
+# Show last 20 lines from the database service
+pctl logs -s database -t 20
+```
+
+### 6. Check Version
+```bash
+pctl version
+```
+Display version information including version number, git commit hash, build timestamp, Go version, and target platform.
 
 ## Configuration
 
