@@ -274,10 +274,10 @@ Create `internal/testutil/` package with:
 
 ## To-dos
 
-- [ ] Phase 1: Test internal/config/config.go - Configuration loading, validation, defaults (14 test cases)
-- [ ] Phase 1: Test internal/errors/formatter.go - Error formatting functions (7 test cases)
-- [ ] Phase 2: Test internal/build/tagging.go - Tag generation, hashing, validation (24 test cases)
-- [ ] Phase 2: Test internal/build/context.go - Tar streaming, dockerignore handling (11 test cases)
+- [x] Phase 1: Test internal/config/config.go - Configuration loading, validation, defaults (14 test cases) ✅ 90.6% coverage
+- [x] Phase 1: Test internal/errors/formatter.go - Error formatting functions (7 test cases) ✅ 100% coverage
+- [x] Phase 2: Test internal/build/tagging.go - Tag generation, hashing, validation (24 test cases) ✅ 82-100% coverage
+- [x] Phase 2: Test internal/build/context.go - Tar streaming, dockerignore handling (11 test cases) ✅ 73-100% coverage
 - [ ] Phase 3: Test internal/compose/compose.go - Compose file reading and validation (4 test cases)
 - [ ] Phase 3: Test internal/compose/parser.go - Compose file parsing and build directive extraction (13 test cases)
 - [ ] Phase 3: Test internal/compose/transformer.go - Compose file transformation (10 test cases)
