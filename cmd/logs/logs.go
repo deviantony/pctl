@@ -22,8 +22,9 @@ var (
 )
 
 var (
-	tailLines int
-	service   string
+	tailLines      int
+	service        string
+	nonInteractive bool
 )
 
 var LogsCmd = &cobra.Command{
@@ -39,6 +40,7 @@ Use --service to filter logs from a specific service.`,
 func init() {
 	LogsCmd.Flags().IntVarP(&tailLines, "tail", "t", 50, "Number of lines to show from the end of logs")
 	LogsCmd.Flags().StringVarP(&service, "service", "s", "", "Show logs from specific service only")
+	LogsCmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "Force non-interactive mode (useful for testing)")
 }
 
 func runLogs(cmd *cobra.Command, args []string) error {
@@ -132,7 +134,7 @@ func runLogs(cmd *cobra.Command, args []string) error {
 
 	// Display logs for each container
 	fmt.Println()
-	return displayLogs(client, containers, cfg.EnvironmentID)
+	return displayLogs(client, containers, cfg.EnvironmentID, nonInteractive)
 }
 
 func filterContainersByService(containers []portainer.Container, serviceName string) []portainer.Container {
@@ -170,7 +172,7 @@ func filterContainersByService(containers []portainer.Container, serviceName str
 	return filtered
 }
 
-func displayLogs(client *portainer.Client, containers []portainer.Container, environmentID int) error {
+func displayLogs(client *portainer.Client, containers []portainer.Container, environmentID int, forceNonInteractive bool) error {
 	// Collect logs for all containers
 	var containerLogs []ContainerLogs
 
@@ -195,7 +197,10 @@ func displayLogs(client *portainer.Client, containers []portainer.Container, env
 		})
 	}
 
-	// Run the interactive viewer
+	// Run the viewer (interactive or non-interactive based on flag)
+	if forceNonInteractive {
+		return RunNonInteractiveViewer(containerLogs)
+	}
 	return RunViewer(containerLogs)
 }
 

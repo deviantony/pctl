@@ -11,7 +11,7 @@ type Environment struct {
 type Stack struct {
 	ID            int    `json:"Id"`
 	Name          string `json:"Name"`
-	StackFile     string `json:"StackFile"`
+	StackFile     string `json:"EntryPoint"` // StackFile maps to Portainer API's EntryPoint field
 	EnvironmentID int    `json:"EndpointId"`
 	Status        int    `json:"Status"`
 }

@@ -2,7 +2,6 @@ package spinner
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,21 +18,28 @@ var (
 
 // SpinnerModel represents a spinner for API operations
 type SpinnerModel struct {
-	spinner spinner.Model
-	message string
-	done    bool
-	err     error
+	spinner        spinner.Model
+	message        string
+	successMessage string
+	done           bool
+	err            error
 }
 
 // NewSpinnerModel creates a new spinner model with a custom message
 func NewSpinnerModel(message string) *SpinnerModel {
+	return NewSpinnerModelWithSuccess(message, "")
+}
+
+// NewSpinnerModelWithSuccess creates a new spinner model with custom message and success message
+func NewSpinnerModelWithSuccess(message, successMessage string) *SpinnerModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return &SpinnerModel{
-		spinner: s,
-		message: message,
+		spinner:        s,
+		message:        message,
+		successMessage: successMessage,
 	}
 }
 
@@ -75,7 +81,12 @@ func (m SpinnerModel) View() string {
 	}
 
 	if m.done {
-		return fmt.Sprintf("\n%s\n", successStyle.Render("✓ Operation completed successfully!"))
+		// Use custom success message if provided, otherwise use default
+		successMsg := m.successMessage
+		if successMsg == "" {
+			successMsg = "✓ Operation completed"
+		}
+		return successStyle.Render(successMsg)
 	}
 
 	return fmt.Sprintf("\n%s %s\n",
@@ -89,30 +100,47 @@ type spinnerErrorMsg struct{ err error }
 
 // RunWithSpinner runs a function with a spinner display
 func RunWithSpinner(message string, operation func() error) error {
-	// Create and run spinner
-	spinnerModel := NewSpinnerModel(message)
-	p := tea.NewProgram(spinnerModel, tea.WithOutput(os.Stderr))
+	return RunWithSpinnerAndSuccess(message, "", operation)
+}
+
+// RunWithSpinnerAndSuccess runs a function with a spinner display and custom success message
+func RunWithSpinnerAndSuccess(message, successMessage string, operation func() error) error {
+	// Create spinner model with custom success message
+	model := NewSpinnerModelWithSuccess(message, successMessage)
+
+	// Create tea program
+	p := tea.NewProgram(model)
+
+	// Channel to receive operation result
+	resultChan := make(chan error, 1)
+	doneChan := make(chan bool, 1)
 
 	// Start the operation in a goroutine
-	var operationErr error
-	done := make(chan bool)
-
 	go func() {
-		operationErr = operation()
-		done <- true
+		err := operation()
+		resultChan <- err
 	}()
 
-	// Run spinner until operation completes
+	// Start the spinner in a goroutine
 	go func() {
-		<-done
-		spinnerModel.done = true
-		p.Quit()
+		if _, err := p.Run(); err != nil {
+			// If spinner fails, just continue
+		}
+		doneChan <- true
 	}()
 
-	// Run the spinner
-	if _, err := p.Run(); err != nil {
-		// Spinner display error - not critical, continue
+	// Wait for operation to complete
+	err := <-resultChan
+
+	// Send completion message to spinner
+	if err != nil {
+		p.Send(spinnerErrorMsg{err: err})
+	} else {
+		p.Send(spinnerCompleteMsg{})
 	}
 
-	return operationErr
+	// Wait for spinner to finish displaying
+	<-doneChan
+
+	return err
 }

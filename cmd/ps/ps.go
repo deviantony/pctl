@@ -17,10 +17,18 @@ import (
 )
 
 var (
-	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
-	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
-	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
-	headerStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true)
+	errorStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
+	infoStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+	headerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true)
+)
+
+// Column width constants for consistent formatting
+const (
+	nameColumnWidth   = 25
+	imageColumnWidth  = 20
+	statusColumnWidth = 15
+	portsColumnWidth  = 15
+	totalTableWidth   = nameColumnWidth + imageColumnWidth + statusColumnWidth + portsColumnWidth
 )
 
 var PsCmd = &cobra.Command{
@@ -58,7 +66,7 @@ func runPs(cmd *cobra.Command, args []string) error {
 
 	// Check if stack exists
 	var existingStack *portainer.Stack
-	err = spinner.RunWithSpinner("Checking if stack exists...", func() error {
+	err = spinner.RunWithSpinnerAndSuccess("Checking if stack exists...", "✓ Stack found", func() error {
 		var fetchErr error
 		existingStack, fetchErr = client.GetStack(cfg.StackName, cfg.EnvironmentID)
 		return fetchErr
@@ -84,11 +92,9 @@ func runPs(cmd *cobra.Command, args []string) error {
 		return nil // Exit cleanly without error
 	}
 
-	fmt.Println(successStyle.Render("✓ Stack found"))
-
 	// Get detailed stack information
 	var stackDetails *portainer.StackDetails
-	err = spinner.RunWithSpinner("Fetching stack details...", func() error {
+	err = spinner.RunWithSpinnerAndSuccess("Fetching stack details...", "✓ Stack details retrieved", func() error {
 		var fetchErr error
 		stackDetails, fetchErr = client.GetStackDetails(existingStack.ID)
 		return fetchErr
@@ -104,7 +110,7 @@ func runPs(cmd *cobra.Command, args []string) error {
 
 	// Get containers for the stack
 	var containers []portainer.Container
-	err = spinner.RunWithSpinner("Fetching container information...", func() error {
+	err = spinner.RunWithSpinnerAndSuccess("Fetching container information...", "✓ Container information loaded", func() error {
 		var fetchErr error
 		containers, fetchErr = client.GetStackContainers(cfg.EnvironmentID, cfg.StackName)
 		return fetchErr
@@ -161,14 +167,6 @@ func displayContainers(containers []portainer.Container) {
 
 	fmt.Println(headerStyle.Render("Containers:"))
 
-	// Create table columns
-	columns := []table.Column{
-		{Title: "NAME", Width: 25},
-		{Title: "IMAGE", Width: 20},
-		{Title: "STATUS", Width: 15},
-		{Title: "PORTS", Width: 15},
-	}
-
 	// Create table rows
 	var rows []table.Row
 	for _, container := range containers {
@@ -184,32 +182,20 @@ func displayContainers(containers []portainer.Container) {
 		rows = append(rows, table.Row{name, image, status, ports})
 	}
 
-	// Create and configure table
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(false),      // Non-interactive for CLI output
-		table.WithHeight(len(rows)+1), // +1 for header
-	)
-
-	// Apply modern styling
-	s := table.DefaultStyles()
-	s.Header = s.Header.
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		BorderBottom(true).
-		Bold(true).
-		Foreground(lipgloss.Color("15"))
-	s.Cell = s.Cell.
-		Foreground(lipgloss.Color("7"))
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("170")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-	t.SetStyles(s)
-
-	// Render the table
-	fmt.Println(t.View())
+	// Use simple formatted output instead of table to avoid indentation issues
+	fmt.Printf("%-*s %-*s %-*s %-*s\n",
+		nameColumnWidth, headerStyle.Render("NAME"),
+		imageColumnWidth, headerStyle.Render("IMAGE"),
+		statusColumnWidth, headerStyle.Render("STATUS"),
+		portsColumnWidth, headerStyle.Render("PORTS"))
+	fmt.Println(strings.Repeat("─", totalTableWidth))
+	for _, row := range rows {
+		fmt.Printf("%-*s %-*s %-*s %-*s\n",
+			nameColumnWidth, row[0],
+			imageColumnWidth, row[1],
+			statusColumnWidth, row[2],
+			portsColumnWidth, row[3])
+	}
 }
 
 func getStatusText(status int) string {

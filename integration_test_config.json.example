@@ -1,0 +1,5 @@
+{
+  "portainer_url": "https://portainer.example.com",
+  "api_token": "ptr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "environment_id": 1
+}

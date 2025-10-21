@@ -52,6 +52,7 @@ Stream real-time logs from your containers.
 **Log Options**:
 - `-t, --tail N`: Show the last N lines from the end of logs (default: 50)
 - `-s, --service NAME`: Show logs from a specific service only
+- `--non-interactive`: Force non-interactive mode (useful for testing and automation)
 
 Examples:
 ```bash
@@ -63,6 +64,12 @@ pctl logs -s web
 
 # Show last 20 lines from the database service
 pctl logs -s database -t 20
+
+# Force non-interactive mode (useful for testing)
+pctl logs --non-interactive
+
+# Non-interactive mode with specific service and tail count
+pctl logs -s web -t 10 --non-interactive
 ```
 
 ### 6. Check Version
@@ -179,6 +186,72 @@ sudo mv pctl /usr/local/bin/
 wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.1.2_windows_amd64.zip
 # Extract the zip file and move pctl.exe to your PATH
 ```
+
+## Testing
+
+pctl includes both unit tests and integration tests to ensure reliability and correctness.
+
+### Unit Tests
+
+Run the unit test suite:
+
+```bash
+# Run all unit tests
+make test
+
+# Run tests with coverage report
+make test-coverage
+```
+
+Unit tests cover:
+- Configuration loading and validation
+- Compose file parsing and transformation
+- Build system components (tagging, context handling, orchestration)
+- Portainer API client functionality
+- Error handling and formatting
+
+### Integration Tests
+
+Integration tests run against a real Portainer instance to validate end-to-end functionality.
+
+**Prerequisites:**
+- Access to a Portainer instance
+- Portainer API token
+- Valid environment ID in Portainer
+
+**Setup:**
+
+1. Copy the example configuration:
+```bash
+cp integration_test_config.json.example integration_test_config.json
+```
+
+2. Edit `integration_test_config.json` with your Portainer details:
+```json
+{
+  "portainer_url": "https://your-portainer-instance.com",
+  "api_token": "ptr_your_api_token_here",
+  "environment_id": 1
+}
+```
+
+**Running Integration Tests:**
+
+```bash
+# Run integration tests
+make test-integration
+```
+
+Integration tests cover:
+- Deploying simple stacks (images only)
+- Redeploying existing stacks
+- Force rebuild with `-f` flag
+- Stack status checking (`pctl ps`)
+- Container logs (`pctl logs`)
+- Build functionality (both remote-build and load modes)
+- Error handling for non-existent stacks
+
+**Note:** Integration tests will create and clean up test stacks automatically. The tests use unique stack names to avoid conflicts.
 
 ## Development
 

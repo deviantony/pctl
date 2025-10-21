@@ -134,9 +134,20 @@ func (c *Client) CreateStack(name, composeContent string, environmentID int) (*S
 		return nil, c.handleErrorResponse(resp)
 	}
 
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
 	var stack Stack
-	if err := json.NewDecoder(resp.Body).Decode(&stack); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := json.Unmarshal(body, &stack); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w, body: %s", err, string(body))
+	}
+
+	// Check if stack has required fields
+	if stack.ID == 0 || stack.Name == "" {
+		return nil, fmt.Errorf("invalid stack response: ID=%d, Name=%s, body: %s", stack.ID, stack.Name, string(body))
 	}
 
 	return &stack, nil
@@ -397,6 +408,27 @@ func (c *Client) GetDockerInfo(environmentID int) (map[string]interface{}, error
 	}
 
 	return info, nil
+}
+
+// DeleteStack deletes a stack from Portainer
+func (c *Client) DeleteStack(stackID int, environmentID int) error {
+	endpoint := fmt.Sprintf("/api/stacks/%d?endpointId=%d", stackID, environmentID)
+	req, err := c.newRequest("DELETE", endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return c.handleErrorResponse(resp)
+	}
+
+	return nil
 }
 
 // ImageExists checks if an image exists on the remote Docker engine
