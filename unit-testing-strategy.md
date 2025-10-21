@@ -283,6 +283,6 @@ Create `internal/testutil/` package with:
 - [x] Phase 3: Test internal/compose/transformer.go - Compose file transformation (10 test cases) ✅ 79-100% coverage
 - [x] Phase 4: Test internal/portainer/types.go - JSON marshaling for API types (6 test cases) ✅ Complete coverage
 - [x] Phase 4: Test internal/portainer/client.go - API client with httptest mocks (12 test cases) ✅ 76.8% coverage
-- [ ] Phase 5: Test internal/build/logger.go - Docker log parsing and formatting (6 test cases)
-- [ ] Phase 5: Test internal/build/orchestrator.go - Build orchestration logic (9 test cases)
+- [x] Phase 5: Test internal/build/logger.go - Docker log parsing and formatting (6 test cases) ✅ 96-100% coverage
+- [x] Phase 5: Test internal/build/orchestrator.go - Build orchestration logic (9 test cases) ✅ 62.9% coverage
 - [ ] Create test infrastructure: internal/testutil package with fixtures, tempdir helpers, and mocks
