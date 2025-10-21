@@ -33,7 +33,6 @@ archives:
         format: zip
     files:
       - README.md
-      - REQUIREMENTS.md
       - LICENSE
     format: tar.gz
 
