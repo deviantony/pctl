@@ -10,6 +10,7 @@ import (
 	"github.com/deviantony/pctl/internal/config"
 	"github.com/deviantony/pctl/internal/portainer"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 // IntegrationConfig represents the configuration for integration tests
@@ -17,6 +18,41 @@ type IntegrationConfig struct {
 	PortainerURL  string `json:"portainer_url"`
 	APIToken      string `json:"api_token"`
 	EnvironmentID int    `json:"environment_id"`
+}
+
+// findProjectRoot finds the project root by looking for go.mod file
+func findProjectRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		goModPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("go.mod not found in current directory or any parent")
+		}
+		dir = parent
+	}
+}
+
+// saveConfigToPath saves a config to a specific path
+func saveConfigToPath(cfg *config.Config, path string) error {
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal configuration: %w", err)
+	}
+
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("failed to write configuration file: %w", err)
+	}
+
+	return nil
 }
 
 // LoadIntegrationConfig loads the integration test configuration from integration_test_config.json
@@ -45,8 +81,14 @@ func LoadIntegrationConfig(t require.TestingT) *IntegrationConfig {
 
 // LoadIntegrationConfigSimple loads the integration test configuration without testing.T dependency
 func LoadIntegrationConfigSimple() (*IntegrationConfig, error) {
-	// Look for config file in project root (go up from tests/integration to project root)
-	configPath := "../../integration_test_config.json"
+	// Find project root by looking for go.mod file
+	projectRoot, err := findProjectRoot()
+	if err != nil {
+		return nil, fmt.Errorf("failed to find project root: %w", err)
+	}
+
+	// Look for config file in project root
+	configPath := filepath.Join(projectRoot, "integration_test_config.json")
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -129,7 +171,7 @@ func GenerateTestStackName() string {
 
 // CreateTestConfig creates a temporary pctl.yml config file for testing
 func CreateTestConfig(t require.TestingT, tempDir string, integrationCfg *IntegrationConfig, stackName string) string {
-	config := &config.Config{
+	cfg := &config.Config{
 		PortainerURL:  integrationCfg.PortainerURL,
 		APIToken:      integrationCfg.APIToken,
 		EnvironmentID: integrationCfg.EnvironmentID,
@@ -148,7 +190,7 @@ func CreateTestConfig(t require.TestingT, tempDir string, integrationCfg *Integr
 	}
 
 	configPath := filepath.Join(tempDir, "pctl.yml")
-	err := config.Save()
+	err := saveConfigToPath(cfg, configPath)
 	require.NoError(t, err, "Failed to create test config")
 
 	return configPath
@@ -156,7 +198,7 @@ func CreateTestConfig(t require.TestingT, tempDir string, integrationCfg *Integr
 
 // CreateTestConfigForLoadMode creates a test config with load mode
 func CreateTestConfigForLoadMode(t require.TestingT, tempDir string, integrationCfg *IntegrationConfig, stackName string) string {
-	config := &config.Config{
+	cfg := &config.Config{
 		PortainerURL:  integrationCfg.PortainerURL,
 		APIToken:      integrationCfg.APIToken,
 		EnvironmentID: integrationCfg.EnvironmentID,
@@ -175,7 +217,7 @@ func CreateTestConfigForLoadMode(t require.TestingT, tempDir string, integration
 	}
 
 	configPath := filepath.Join(tempDir, "pctl.yml")
-	err := config.Save()
+	err := saveConfigToPath(cfg, configPath)
 	require.NoError(t, err, "Failed to create test config for load mode")
 
 	return configPath

@@ -20,11 +20,43 @@ import (
 var (
 	integrationConfig *testutil.IntegrationConfig
 	portainerClient   *portainer.Client
+	projectRoot       string
 )
 
+// findProjectRoot finds the project root by looking for go.mod file
+func findProjectRoot() (string, error) {
+	// Start from the current test directory and go up to find go.mod
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Keep going up until we find go.mod or reach the filesystem root
+	for {
+		goModPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached filesystem root, go.mod not found
+			return "", fmt.Errorf("go.mod not found in current directory or any parent")
+		}
+		dir = parent
+	}
+}
+
 func TestMain(m *testing.M) {
-	// Load integration configuration
+	// Find project root first
 	var err error
+	projectRoot, err = findProjectRoot()
+	if err != nil {
+		fmt.Printf("Failed to find project root: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Load integration configuration
 	integrationConfig, err = testutil.LoadIntegrationConfigSimple()
 	if err != nil {
 		fmt.Printf("Failed to load integration config: %v\n", err)
@@ -52,10 +84,16 @@ func TestMain(m *testing.M) {
 
 // runPctlCommand executes a pctl command and returns the output
 func runPctlCommand(t *testing.T, args ...string) (string, error) {
-	// Get the project root directory - use the absolute path from the workspace
-	projectRoot := "/workspace/pctl"
+	// Use the project root found in TestMain
+	if projectRoot == "" {
+		return "", fmt.Errorf("project root not initialized")
+	}
 
-	currentDir, _ := os.Getwd()
+	currentDir, getwdErr := os.Getwd()
+	if getwdErr != nil {
+		t.Logf("Warning: Could not get current directory: %v", getwdErr)
+		currentDir = "unknown"
+	}
 	t.Logf("Project root: %s", projectRoot)
 	t.Logf("Current dir: %s", currentDir)
 

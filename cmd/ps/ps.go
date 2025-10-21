@@ -22,6 +22,15 @@ var (
 	headerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("14")).Bold(true)
 )
 
+// Column width constants for consistent formatting
+const (
+	nameColumnWidth   = 25
+	imageColumnWidth  = 20
+	statusColumnWidth = 15
+	portsColumnWidth  = 15
+	totalTableWidth   = nameColumnWidth + imageColumnWidth + statusColumnWidth + portsColumnWidth
+)
+
 var PsCmd = &cobra.Command{
 	Use:   "ps",
 	Short: "Show stack status and running containers",
@@ -174,14 +183,18 @@ func displayContainers(containers []portainer.Container) {
 	}
 
 	// Use simple formatted output instead of table to avoid indentation issues
-	fmt.Printf("%-25s %-20s %-15s %-15s\n",
-		headerStyle.Render("NAME"),
-		headerStyle.Render("IMAGE"),
-		headerStyle.Render("STATUS"),
-		headerStyle.Render("PORTS"))
-	fmt.Println(strings.Repeat("─", 75))
+	fmt.Printf("%-*s %-*s %-*s %-*s\n",
+		nameColumnWidth, headerStyle.Render("NAME"),
+		imageColumnWidth, headerStyle.Render("IMAGE"),
+		statusColumnWidth, headerStyle.Render("STATUS"),
+		portsColumnWidth, headerStyle.Render("PORTS"))
+	fmt.Println(strings.Repeat("─", totalTableWidth))
 	for _, row := range rows {
-		fmt.Printf("%-25s %-20s %-15s %-15s\n", row[0], row[1], row[2], row[3])
+		fmt.Printf("%-*s %-*s %-*s %-*s\n",
+			nameColumnWidth, row[0],
+			imageColumnWidth, row[1],
+			statusColumnWidth, row[2],
+			portsColumnWidth, row[3])
 	}
 }
 
