@@ -502,7 +502,7 @@ func TestIntegration_BuildLoadMode(t *testing.T) {
 
 func TestIntegration_CleanupNonExistentStack(t *testing.T) {
 	// Test cleanup of non-existent stack
-	nonExistentStackName := "pctl-nonexistent-stack-" + string(rune(time.Now().Unix()))
+	nonExistentStackName := fmt.Sprintf("pctl-nonexistent-stack-%d", time.Now().Unix())
 
 	// This should not error even if stack doesn't exist
 	testutil.CleanupStack(t, portainerClient, nonExistentStackName, integrationConfig.EnvironmentID)

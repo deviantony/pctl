@@ -158,8 +158,6 @@ func displayContainers(containers []portainer.Container) {
 
 	fmt.Println(headerStyle.Render("Containers:"))
 
-	// No longer need table columns since we're using simple formatting
-
 	// Create table rows
 	var rows []table.Row
 	for _, container := range containers {

@@ -86,7 +86,7 @@ func (m SpinnerModel) View() string {
 		if successMsg == "" {
 			successMsg = "✓ Operation completed"
 		}
-		return fmt.Sprintf("%s", successStyle.Render(successMsg))
+		return successStyle.Render(successMsg)
 	}
 
 	return fmt.Sprintf("\n%s %s\n",
