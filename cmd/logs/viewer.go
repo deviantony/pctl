@@ -263,7 +263,7 @@ func cleanDockerLogLine(line string) string {
 func RunViewer(containers []ContainerLogs) error {
 	// Check if we're in an interactive terminal
 	if !isInteractive() {
-		return runNonInteractiveViewer(containers)
+		return RunNonInteractiveViewer(containers)
 	}
 
 	model := NewLogsViewer(containers)
@@ -299,8 +299,8 @@ func getTerminalWidth() (int, error) {
 	return 80, fmt.Errorf("unable to determine terminal width")
 }
 
-// runNonInteractiveViewer displays logs in a simple format for non-interactive environments
-func runNonInteractiveViewer(containers []ContainerLogs) error {
+// RunNonInteractiveViewer displays logs in a simple format for non-interactive environments
+func RunNonInteractiveViewer(containers []ContainerLogs) error {
 	// Get terminal width for wrapping (default to 80 if we can't determine it)
 	width := 80
 	if w, err := getTerminalWidth(); err == nil && w > 0 {

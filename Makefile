@@ -64,6 +64,20 @@ test-coverage:
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
 
+# Run integration tests
+.PHONY: test-integration
+test-integration:
+	@echo "Running integration tests..."
+	@if [ ! -f integration_test_config.json ]; then \
+		echo "Error: integration_test_config.json not found"; \
+		echo "Copy integration_test_config.json.example to integration_test_config.json and configure it"; \
+		echo "Example:"; \
+		echo "  cp integration_test_config.json.example integration_test_config.json"; \
+		echo "  # Edit integration_test_config.json with your Portainer details"; \
+		exit 1; \
+	fi
+	go test -v -tags=integration ./tests/integration/...
+
 # Lint the code
 .PHONY: lint
 lint:
@@ -109,6 +123,7 @@ help:
 	@echo "  deps          - Install and tidy dependencies"
 	@echo "  test          - Run tests"
 	@echo "  test-coverage - Run tests with coverage report"
+	@echo "  test-integration - Run integration tests (requires integration_test_config.json)"
 	@echo "  lint          - Run linter (requires golangci-lint)"
 	@echo "  fmt           - Format code"
 	@echo "  clean         - Clean build artifacts"

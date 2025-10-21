@@ -61,7 +61,7 @@ func TestStack_JSONMarshal(t *testing.T) {
 
 	assert.Equal(t, float64(1), result["Id"])
 	assert.Equal(t, "myapp", result["Name"])
-	assert.Equal(t, "version: '3.8'\nservices:\n  web:\n    image: nginx", result["StackFile"])
+	assert.Equal(t, "version: '3.8'\nservices:\n  web:\n    image: nginx", result["EntryPoint"])
 	assert.Equal(t, float64(1), result["EndpointId"])
 	assert.Equal(t, float64(1), result["Status"])
 }
@@ -70,7 +70,7 @@ func TestStack_JSONUnmarshal(t *testing.T) {
 	jsonData := `{
 		"Id": 2,
 		"Name": "myapp-staging",
-		"StackFile": "version: '3.8'\nservices:\n  api:\n    image: myapp-api:latest",
+		"EntryPoint": "version: '3.8'\nservices:\n  api:\n    image: myapp-api:latest",
 		"EndpointId": 2,
 		"Status": 2
 	}`

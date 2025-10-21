@@ -132,7 +132,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 
 	// Check if stack already exists
 	var existingStack *portainer.Stack
-	err = spinner.RunWithSpinner("Checking if stack already exists...", func() error {
+	err = spinner.RunWithSpinnerAndSuccess("Checking if stack already exists...", "✓ Stack check completed", func() error {
 		var fetchErr error
 		existingStack, fetchErr = client.GetStack(cfg.StackName, cfg.EnvironmentID)
 		return fetchErr
@@ -160,7 +160,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 
 	// Create new stack
 	var stack *portainer.Stack
-	err = spinner.RunWithSpinner("Creating new stack...", func() error {
+	err = spinner.RunWithSpinnerAndSuccess("Creating new stack...", "✓ Stack created", func() error {
 		var fetchErr error
 		stack, fetchErr = client.CreateStack(cfg.StackName, finalComposeContent, cfg.EnvironmentID)
 		return fetchErr
@@ -183,6 +183,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println(successStyle.Render("✓ Stack deployed successfully!"))
 	fmt.Println()
+
 	fmt.Println(infoStyle.Render("Stack Details:"))
 	fmt.Printf("  ID: %d\n", stack.ID)
 	fmt.Printf("  Name: %s\n", stack.Name)
