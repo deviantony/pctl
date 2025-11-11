@@ -28,6 +28,8 @@ type ServiceBuildInfo struct {
 type ComposeFile struct {
 	Services map[string]interface{} `yaml:"services"`
 	Version  string                 `yaml:"version"`
+	Volumes  map[string]interface{} `yaml:"volumes,omitempty"`
+	Networks map[string]interface{} `yaml:"networks,omitempty"`
 }
 
 // ParseComposeFile parses a compose file and extracts build information

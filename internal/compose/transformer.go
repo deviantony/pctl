@@ -53,6 +53,8 @@ func TransformComposeFile(originalContent string, imageTags map[string]string) (
 	transformedCompose := ComposeFile{
 		Services: transformedServices,
 		Version:  compose.Version,
+		Volumes:  compose.Volumes,
+		Networks: compose.Networks,
 	}
 
 	// Marshal back to YAML
