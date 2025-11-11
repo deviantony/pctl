@@ -151,39 +151,39 @@ Download the latest release for your platform from [GitHub Releases](https://git
 
 ### Linux AMD64
 ```bash
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.1_linux_amd64.tar.gz
-tar -xzf pctl_1.2.1_linux_amd64.tar.gz
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.2_linux_amd64.tar.gz
+tar -xzf pctl_1.2.2_linux_amd64.tar.gz
 chmod +x pctl
 sudo mv pctl /usr/local/bin/
 ```
 
 ### Linux ARM64
 ```bash
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.1_linux_arm64.tar.gz
-tar -xzf pctl_1.2.1_linux_arm64.tar.gz
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.2_linux_arm64.tar.gz
+tar -xzf pctl_1.2.2_linux_arm64.tar.gz
 chmod +x pctl
 sudo mv pctl /usr/local/bin/
 ```
 
 ### macOS AMD64
 ```bash
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.1_darwin_amd64.tar.gz
-tar -xzf pctl_1.2.1_darwin_amd64.tar.gz
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.2_darwin_amd64.tar.gz
+tar -xzf pctl_1.2.2_darwin_amd64.tar.gz
 chmod +x pctl
 sudo mv pctl /usr/local/bin/
 ```
 
 ### macOS ARM64 (Apple Silicon)
 ```bash
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.1_darwin_arm64.tar.gz
-tar -xzf pctl_1.2.1_darwin_arm64.tar.gz
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.2_darwin_arm64.tar.gz
+tar -xzf pctl_1.2.2_darwin_arm64.tar.gz
 chmod +x pctl
 sudo mv pctl /usr/local/bin/
 ```
 
 ### Windows AMD64
 ```bash
-wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.1_windows_amd64.zip
+wget https://github.com/deviantony/pctl/releases/latest/download/pctl_1.2.2_windows_amd64.zip
 # Extract the zip file and move pctl.exe to your PATH
 ```
 
