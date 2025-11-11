@@ -497,3 +497,71 @@ services:
 	// Check that build directive was removed
 	assert.NotContains(t, webService, "build")
 }
+
+func TestTransformComposeFile_PreservesTopLevelVolumes(t *testing.T) {
+	originalContent := `
+version: '3.8'
+services:
+  database:
+    build: ./database
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:
+    driver: local
+`
+
+	imageTags := map[string]string{
+		"database": "myapp-database:abc123",
+	}
+
+	result, err := TransformComposeFile(originalContent, imageTags)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Parse the transformed content to verify volumes are preserved
+	transformedCompose, err := ParseComposeFile(result.TransformedContent)
+	require.NoError(t, err)
+
+	// Check that volumes section is preserved
+	assert.NotNil(t, transformedCompose.Volumes)
+	assert.Contains(t, transformedCompose.Volumes, "postgres_data")
+
+	// Check that the transformed content contains volumes
+	assert.Contains(t, result.TransformedContent, "volumes:")
+	assert.Contains(t, result.TransformedContent, "postgres_data:")
+}
+
+func TestTransformComposeFile_PreservesTopLevelNetworks(t *testing.T) {
+	originalContent := `
+version: '3.8'
+services:
+  web:
+    build: ./web
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
+`
+
+	imageTags := map[string]string{
+		"web": "myapp-web:abc123",
+	}
+
+	result, err := TransformComposeFile(originalContent, imageTags)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Parse the transformed content to verify networks are preserved
+	transformedCompose, err := ParseComposeFile(result.TransformedContent)
+	require.NoError(t, err)
+
+	// Check that networks section is preserved
+	assert.NotNil(t, transformedCompose.Networks)
+	assert.Contains(t, transformedCompose.Networks, "app-network")
+
+	// Check that the transformed content contains networks
+	assert.Contains(t, result.TransformedContent, "networks:")
+	assert.Contains(t, result.TransformedContent, "app-network:")
+}
