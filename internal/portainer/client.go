@@ -3,6 +3,7 @@ package portainer
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -332,7 +333,20 @@ func (c *Client) BuildImage(environmentID int, ctxTar io.Reader, opts BuildOptio
 	}
 	req.Header.Set("Content-Type", "application/x-tar")
 
-	resp, err := c.httpClient.Do(req)
+	// Use a context with a longer timeout for build operations (5 minutes)
+	// Docker builds can take a long time, especially with large contexts or slow networks
+	buildCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	req = req.WithContext(buildCtx)
+
+	// Create a temporary HTTP client with no timeout for the build request
+	// The context timeout will handle the timeout instead
+	buildClient := &http.Client{
+		Transport: c.httpClient.Transport,
+		// No timeout - let the context handle it
+	}
+
+	resp, err := buildClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("build call: %w", err)
 	}
@@ -363,7 +377,20 @@ func (c *Client) LoadImage(environmentID int, imageTar io.Reader, onProgress fun
 	}
 	req.Header.Set("Content-Type", "application/x-tar")
 
-	resp, err := c.httpClient.Do(req)
+	// Use a context with a longer timeout for load operations (5 minutes)
+	// Image loads can take a long time, especially with large images or slow networks
+	loadCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	req = req.WithContext(loadCtx)
+
+	// Create a temporary HTTP client with no timeout for the load request
+	// The context timeout will handle the timeout instead
+	loadClient := &http.Client{
+		Transport: c.httpClient.Transport,
+		// No timeout - let the context handle it
+	}
+
+	resp, err := loadClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("load call: %w", err)
 	}
