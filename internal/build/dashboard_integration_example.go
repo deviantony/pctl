@@ -1,147 +1,173 @@
 package build
 
-// Example: How to integrate the interactive dashboard into BuildOrchestrator
+// Example: How to integrate the passive dashboard into BuildOrchestrator
 
 /*
-Usage in cmd/deploy/deploy.go or cmd/redeploy/redeploy.go:
+USAGE IN cmd/deploy/deploy.go or cmd/redeploy/redeploy.go:
 
 import (
-	"github.com/deviantony/pctl/internal/build"
 	"os"
+	"time"
+
+	"github.com/deviantony/pctl/internal/build"
+	"github.com/deviantony/pctl/internal/compose"
+	"golang.org/x/term"
 )
 
-func buildWithDashboard(orchestrator *build.BuildOrchestrator, services []compose.ServiceBuildInfo) error {
+func buildServicesWithDashboard(
+	orchestrator *build.BuildOrchestrator,
+	services []compose.ServiceBuildInfo,
+) (map[string]string, error) {
 	// Check if running in interactive terminal
-	isInteractive := isatty.IsTerminal(os.Stdout.Fd())
+	isInteractive := term.IsTerminal(int(os.Stdout.Fd()))
 
-	if isInteractive {
+	if isInteractive && len(services) > 0 {
 		// Extract service names
 		serviceNames := make([]string, len(services))
 		for i, svc := range services {
 			serviceNames[i] = svc.ServiceName
 		}
 
-		// Create dashboard
+		// Create passive dashboard
 		dashboard := build.NewBuildDashboard(serviceNames)
 
 		// Create logger that updates dashboard
-		fallbackLogger := build.NewStyledBuildLogger("BUILD")
-		interactiveLogger := build.NewInteractiveBuildLogger(dashboard, fallbackLogger)
+		dashboardLogger := build.NewDashboardBuildLogger(dashboard)
 
-		// Start dashboard TUI
+		// Mark all services as queued initially
+		for _, name := range serviceNames {
+			dashboardLogger.MarkServiceQueued(name)
+		}
+
+		// Start dashboard TUI (runs in background)
 		dashboard.Start()
-		defer dashboard.Stop()
+		defer func() {
+			// Keep dashboard visible for 2 seconds after builds complete
+			time.Sleep(2 * time.Second)
+			dashboard.Stop()
+		}()
 
 		// Replace orchestrator's logger
-		orchestrator.SetLogger(interactiveLogger)
+		// NOTE: You'll need to add a SetLogger method to BuildOrchestrator
+		// or pass the logger in the constructor
+		orchestrator.SetLogger(dashboardLogger)
 
-		// Build services (dashboard will update automatically)
+		// Build services (dashboard updates automatically)
 		imageTags, err := orchestrator.BuildServices(services)
 
-		// Keep dashboard open for a moment to show final state
-		time.Sleep(2 * time.Second)
-
-		return err
-	} else {
-		// Non-interactive mode - use regular logger
-		return orchestrator.BuildServices(services)
+		return imageTags, err
 	}
+
+	// Non-interactive mode - use regular styled logger
+	return orchestrator.BuildServices(services)
 }
 
-// Add this method to BuildOrchestrator to allow logger replacement:
+// INTEGRATION WITH BuildOrchestrator:
+//
+// You'll need to modify internal/build/orchestrator.go slightly:
+//
+// 1. Add SetLogger method to BuildOrchestrator:
 func (bo *BuildOrchestrator) SetLogger(logger BuildLogger) {
 	bo.logger = logger
 }
+
+// 2. Update buildService to mark status changes:
+//
+// In buildService() before building, mark as building:
+if dashLogger, ok := bo.logger.(*build.DashboardBuildLogger); ok {
+	dashLogger.MarkServiceBuilding(serviceName)
+}
+
+// After successful build:
+if dashLogger, ok := bo.logger.(*build.DashboardBuildLogger); ok {
+	dashLogger.MarkServiceComplete(serviceName)
+}
+
+// After failed build:
+if dashLogger, ok := bo.logger.(*build.DashboardBuildLogger); ok {
+	dashLogger.MarkServiceFailed(serviceName, err)
+}
+
 */
 
-// Alternative: Simpler progress bars without full TUI
-
 /*
-For a lighter-weight solution, just add progress tracking to StyledBuildLogger:
+MINIMAL INTEGRATION EXAMPLE:
+
+Here's the absolute minimum code to add to cmd/deploy/deploy.go:
 
 import (
-	"github.com/charmbracelet/bubbles/progress"
-	"regexp"
-	"strconv"
+	"os"
+	"time"
+	"golang.org/x/term"
+	"github.com/deviantony/pctl/internal/build"
 )
 
-type StyledBuildLogger struct {
-	// ... existing fields ...
+// Before calling BuildServices:
+var logger build.BuildLogger = build.NewStyledBuildLogger("BUILD")
+var dashboard *build.BuildDashboard
 
-	// Add progress tracking
-	serviceProgress map[string]*serviceProgress
-	progressMu      sync.Mutex
-}
-
-type serviceProgress struct {
-	current int
-	total   int
-	prog    progress.Model
-}
-
-func NewStyledBuildLogger(prefix string) *StyledBuildLogger {
-	return &StyledBuildLogger{
-		// ... existing initialization ...
-		serviceProgress: make(map[string]*serviceProgress),
-	}
-}
-
-// Add UpdateProgress method
-func (l *StyledBuildLogger) UpdateProgress(serviceName string, current, total int) {
-	l.progressMu.Lock()
-	defer l.progressMu.Unlock()
-
-	if l.serviceProgress[serviceName] == nil {
-		l.serviceProgress[serviceName] = &serviceProgress{
-			prog: progress.New(progress.WithDefaultGradient()),
-		}
+// Check if terminal supports TUI
+if term.IsTerminal(int(os.Stdout.Fd())) && len(servicesWithBuild) > 1 {
+	serviceNames := make([]string, len(servicesWithBuild))
+	for i, svc := range servicesWithBuild {
+		serviceNames[i] = svc.ServiceName
 	}
 
-	sp := l.serviceProgress[serviceName]
-	sp.current = current
-	sp.total = total
-
-	percent := float64(current) / float64(total)
-
-	// Print inline progress bar
-	fmt.Printf("\r%s %s %s %d/%d",
-		l.styleBadge.Render(l.prefix),
-		l.styleBadge.Copy().Foreground(lipgloss.Color("219")).Render(serviceName),
-		sp.prog.ViewAs(percent),
-		current,
-		total,
-	)
-
-	if current == total {
-		fmt.Println() // New line when complete
-	}
+	dashboard = build.NewBuildDashboard(serviceNames)
+	logger = build.NewDashboardBuildLogger(dashboard)
+	dashboard.Start()
 }
 
-// Then in orchestrator.go buildRemote(), add progress extraction:
+// Create orchestrator with the logger
+orchestrator := build.NewBuildOrchestrator(client, buildConfig, envID, stackName, logger)
 
-func (bo *BuildOrchestrator) buildRemote(serviceInfo compose.ServiceBuildInfo, imageTag string) BuildResult {
-	serviceName := serviceInfo.ServiceName
+// Build services
+imageTags, err := orchestrator.BuildServices(servicesWithBuild)
 
-	// ... existing setup code ...
-
-	// Regex to extract "Step X/Y"
-	stepRegex := regexp.MustCompile(`Step (\d+)/(\d+)`)
-
-	err = bo.client.BuildImage(bo.envID, ctxTar, buildOpts, func(line string) {
-		// Check if logger supports progress
-		if progressLogger, ok := bo.logger.(interface{ UpdateProgress(string, int, int) }); ok {
-			// Extract step info from line
-			if matches := stepRegex.FindStringSubmatch(line); len(matches) == 3 {
-				current, _ := strconv.Atoi(matches[1])
-				total, _ := strconv.Atoi(matches[2])
-				progressLogger.UpdateProgress(serviceName, current, total)
-			}
-		}
-
-		// Always log the full line
-		bo.logger.LogService(serviceName, line)
-	})
-
-	// ... rest of code ...
+// Stop dashboard after builds complete
+if dashboard != nil {
+	time.Sleep(2 * time.Second) // Keep visible for a moment
+	dashboard.Stop()
 }
+*/
+
+/*
+EXPECTED OUTPUT:
+
+When running in a terminal with multiple services:
+
+╭─────────────────────────────────────────────────────────────────╮
+│ Building Services                                               │
+│ Complete: 2 | Building: 1 | Failed: 0 | Total: 5                │
+│                                                                  │
+│ ✓ frontend           ████████████████████ 100% (45s)            │
+│                                                                  │
+│ ● backend            ████████░░░░░░░░░░░░  60% (12s)            │
+│     Step 6/10 : RUN npm install                                 │
+│      ---> Running in a1b2c3d4e5f6                               │
+│     npm WARN deprecated package@1.0.0                           │
+│                                                                  │
+│ ⏳ database          ░░░░░░░░░░░░░░░░░░░░   0% (queued)         │
+│                                                                  │
+│ ✓ nginx              ████████████████████ 100% (8s)             │
+│                                                                  │
+│ ● worker             ██████░░░░░░░░░░░░░░  40% (22s)            │
+│     Step 4/10 : COPY . .                                        │
+│      ---> c2d3e4f5a6b7                                          │
+│                                                                  │
+│ Press q or Ctrl+C to quit                                       │
+╰─────────────────────────────────────────────────────────────────╯
+
+The dashboard updates automatically in real-time as builds progress.
+No keyboard interaction needed (except q to quit early).
+*/
+
+/*
+DEPENDENCIES:
+
+Add to go.mod if not already present:
+
+go get golang.org/x/term
+
+This is for checking if stdout is a terminal (term.IsTerminal).
 */

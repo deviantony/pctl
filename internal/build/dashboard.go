@@ -2,20 +2,23 @@ package build
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-// BuildDashboard provides an interactive TUI for monitoring parallel builds
+// BuildDashboard provides a passive TUI for monitoring parallel builds
+// It auto-updates and displays all services without requiring user interaction
 type BuildDashboard struct {
-	program *tea.Program
-	model   *dashboardModel
+	program      *tea.Program
+	model        *dashboardModel
+	serviceOrder []string // Preserve service order for consistent display
 }
 
 type ServiceBuildStatus struct {
@@ -23,7 +26,7 @@ type ServiceBuildStatus struct {
 	Status      BuildStatus
 	CurrentStep int
 	TotalSteps  int
-	Logs        []string
+	Logs        []string // Keep last few log lines
 	StartTime   time.Time
 	EndTime     time.Time
 	Error       error
@@ -54,14 +57,28 @@ func (s BuildStatus) String() string {
 	}
 }
 
+func (s BuildStatus) Color() lipgloss.Color {
+	switch s {
+	case StatusQueued:
+		return lipgloss.Color("8")  // Gray
+	case StatusBuilding:
+		return lipgloss.Color("12") // Blue
+	case StatusComplete:
+		return lipgloss.Color("10") // Green
+	case StatusFailed:
+		return lipgloss.Color("9")  // Red
+	default:
+		return lipgloss.Color("7")
+	}
+}
+
 type dashboardModel struct {
-	services      map[string]*ServiceBuildStatus
-	progressBars  map[string]progress.Model
-	viewport      viewport.Model
-	width         int
-	height        int
-	selectedIndex int
-	mu            sync.RWMutex
+	services     map[string]*ServiceBuildStatus
+	serviceOrder []string
+	progressBars map[string]progress.Model
+	width        int
+	height       int
+	mu           sync.RWMutex
 }
 
 // UpdateMsg is sent when a service's status changes
@@ -74,7 +91,7 @@ type UpdateMsg struct {
 	Error       error
 }
 
-// NewBuildDashboard creates an interactive build dashboard
+// NewBuildDashboard creates a passive build dashboard
 func NewBuildDashboard(services []string) *BuildDashboard {
 	serviceMap := make(map[string]*ServiceBuildStatus)
 	progressBars := make(map[string]progress.Model)
@@ -90,12 +107,13 @@ func NewBuildDashboard(services []string) *BuildDashboard {
 
 	model := &dashboardModel{
 		services:     serviceMap,
+		serviceOrder: services, // Preserve order
 		progressBars: progressBars,
-		viewport:     viewport.New(80, 20),
 	}
 
 	return &BuildDashboard{
-		model: model,
+		model:        model,
+		serviceOrder: services,
 	}
 }
 
@@ -140,8 +158,6 @@ func (m *dashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height - 10 // Reserve space for service list
 
 	case UpdateMsg:
 		m.mu.Lock()
@@ -151,7 +167,11 @@ func (m *dashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			svc.CurrentStep = msg.Step
 			svc.TotalSteps = msg.Total
 			if msg.LogLine != "" {
+				// Keep only last 3 log lines per service
 				svc.Logs = append(svc.Logs, msg.LogLine)
+				if len(svc.Logs) > 3 {
+					svc.Logs = svc.Logs[len(svc.Logs)-3:]
+				}
 			}
 			if msg.Error != nil {
 				svc.Error = msg.Error
@@ -167,17 +187,10 @@ func (m *dashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mu.Unlock()
 
 	case tea.KeyMsg:
+		// Only allow quitting - no other interactions
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
-		case "up", "k":
-			if m.selectedIndex > 0 {
-				m.selectedIndex--
-			}
-		case "down", "j":
-			if m.selectedIndex < len(m.services)-1 {
-				m.selectedIndex++
-			}
 		}
 	}
 
@@ -190,13 +203,20 @@ func (m *dashboardModel) View() string {
 
 	var b strings.Builder
 
-	// Header
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("13")).
-		Background(lipgloss.Color("236")).
+	// Define styles
+	borderStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("238")).
 		Padding(0, 1)
 
+	headerStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("13"))
+
+	dimStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("8"))
+
+	// Count statuses
 	completed := 0
 	building := 0
 	failed := 0
@@ -211,145 +231,225 @@ func (m *dashboardModel) View() string {
 		}
 	}
 
-	header := fmt.Sprintf("Building Services | Complete: %d | Building: %d | Failed: %d | Total: %d",
-		completed, building, failed, len(m.services))
-	b.WriteString(headerStyle.Render(header))
-	b.WriteString("\n\n")
+	// Build the content
+	var content strings.Builder
+	content.WriteString(headerStyle.Render("Building Services") + "\n")
+	content.WriteString(dimStyle.Render(fmt.Sprintf("Complete: %d | Building: %d | Failed: %d | Total: %d",
+		completed, building, failed, len(m.services))) + "\n\n")
 
-	// Service list with progress bars
-	serviceListStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("238")).
-		Padding(1)
+	// Iterate through services in order
+	for _, serviceName := range m.serviceOrder {
+		svc, ok := m.services[serviceName]
+		if !ok {
+			continue
+		}
 
-	var serviceList strings.Builder
-	i := 0
-	for _, svc := range m.services {
 		svc.mu.Lock()
 
-		// Status icon and name
-		line := fmt.Sprintf("%s %-20s ", svc.Status.String(), svc.Name)
+		// Service status line with progress bar
+		statusStyle := lipgloss.NewStyle().
+			Foreground(svc.Status.Color()).
+			Bold(true)
+
+		line := fmt.Sprintf("%s %-20s ", statusStyle.Render(svc.Status.String()), svc.Name)
 
 		// Progress bar
 		if svc.TotalSteps > 0 {
 			percent := float64(svc.CurrentStep) / float64(svc.TotalSteps)
 			progBar := m.progressBars[svc.Name].ViewAs(percent)
 			line += progBar + " "
-			line += fmt.Sprintf("%d/%d ", svc.CurrentStep, svc.TotalSteps)
+			line += fmt.Sprintf("%3d%% ", int(percent*100))
 		} else {
-			line += strings.Repeat("░", 20) + " "
+			// Empty progress bar for queued services
+			line += strings.Repeat("░", 20) + "   0% "
 		}
 
 		// Duration
 		var duration time.Duration
-		if svc.Status == StatusBuilding {
+		if svc.Status == StatusBuilding && !svc.StartTime.IsZero() {
 			duration = time.Since(svc.StartTime)
-		} else if !svc.EndTime.IsZero() {
+		} else if !svc.EndTime.IsZero() && !svc.StartTime.IsZero() {
 			duration = svc.EndTime.Sub(svc.StartTime)
 		}
 		if duration > 0 {
-			line += fmt.Sprintf("(%s)", duration.Round(time.Second))
+			line += dimStyle.Render(fmt.Sprintf("(%s)", duration.Round(time.Second)))
+		} else if svc.Status == StatusQueued {
+			line += dimStyle.Render("(queued)")
 		}
 
-		// Highlight selected service
-		if i == m.selectedIndex {
-			line = lipgloss.NewStyle().
-				Background(lipgloss.Color("237")).
-				Render(line)
-		}
+		content.WriteString(line + "\n")
 
-		serviceList.WriteString(line + "\n")
-		svc.mu.Unlock()
-		i++
-	}
+		// Show last few log lines for building services
+		if svc.Status == StatusBuilding && len(svc.Logs) > 0 {
+			logStyle := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("250")).
+				MarginLeft(2)
 
-	b.WriteString(serviceListStyle.Render(serviceList.String()))
-	b.WriteString("\n\n")
-
-	// Log viewer for selected service
-	if m.selectedIndex < len(m.services) {
-		// Find selected service (need to iterate since map order is random)
-		i := 0
-		for _, svc := range m.services {
-			if i == m.selectedIndex {
-				svc.mu.Lock()
-				logStyle := lipgloss.NewStyle().
-					Border(lipgloss.RoundedBorder()).
-					BorderForeground(lipgloss.Color("238")).
-					Padding(1)
-
-				logHeader := fmt.Sprintf("── Logs: %s ──", svc.Name)
-				b.WriteString(logHeader + "\n")
-
-				// Show last 10 log lines
-				startIdx := 0
-				if len(svc.Logs) > 10 {
-					startIdx = len(svc.Logs) - 10
+			for _, logLine := range svc.Logs {
+				// Clean and indent log lines
+				cleanedLog := cleanLogLine(logLine)
+				if cleanedLog != "" {
+					content.WriteString(logStyle.Render("  "+cleanedLog) + "\n")
 				}
-				logContent := strings.Join(svc.Logs[startIdx:], "\n")
-				b.WriteString(logStyle.Render(logContent))
-
-				svc.mu.Unlock()
-				break
 			}
-			i++
 		}
+
+		// Show error for failed services
+		if svc.Status == StatusFailed && svc.Error != nil {
+			errorStyle := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("9")).
+				MarginLeft(2)
+			content.WriteString(errorStyle.Render(fmt.Sprintf("  Error: %v", svc.Error)) + "\n")
+		}
+
+		content.WriteString("\n")
+		svc.mu.Unlock()
 	}
 
-	b.WriteString("\n\nControls: ↑/k up | ↓/j down | q quit")
+	// Add quit hint at bottom
+	content.WriteString(dimStyle.Render("Press q or Ctrl+C to quit"))
+
+	// Wrap in border
+	b.WriteString(borderStyle.Render(content.String()))
 
 	return b.String()
 }
 
-// InteractiveBuildLogger implements BuildLogger with dashboard integration
-type InteractiveBuildLogger struct {
-	dashboard *BuildDashboard
-	fallback  BuildLogger
+// cleanLogLine removes JSON wrapping and cleans up Docker build output
+func cleanLogLine(line string) string {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return ""
+	}
+
+	// If it starts with {, try to parse as JSON
+	if line[0] == '{' {
+		var m map[string]interface{}
+		if err := regexp.MustCompile(`"stream"\s*:\s*"([^"]*)"`)
+			.FindStringSubmatch(line); err != nil && len(err) > 1 {
+			return strings.TrimSpace(err[1])
+		}
+	}
+
+	// Return as-is if not JSON or parsing failed
+	return line
 }
 
-// NewInteractiveBuildLogger creates a logger that updates the dashboard
-func NewInteractiveBuildLogger(dashboard *BuildDashboard, fallback BuildLogger) *InteractiveBuildLogger {
-	return &InteractiveBuildLogger{
-		dashboard: dashboard,
-		fallback:  fallback,
+// DashboardBuildLogger implements BuildLogger with dashboard integration
+// It's passive - just displays information, no interaction required
+type DashboardBuildLogger struct {
+	dashboard    *BuildDashboard
+	stepRegex    *regexp.Regexp
+	serviceState map[string]*serviceState
+	mu           sync.Mutex
+}
+
+type serviceState struct {
+	currentStep int
+	totalSteps  int
+	status      BuildStatus
+}
+
+// NewDashboardBuildLogger creates a logger that updates the dashboard
+func NewDashboardBuildLogger(dashboard *BuildDashboard) *DashboardBuildLogger {
+	return &DashboardBuildLogger{
+		dashboard:    dashboard,
+		stepRegex:    regexp.MustCompile(`Step (\d+)/(\d+)`),
+		serviceState: make(map[string]*serviceState),
 	}
 }
 
-func (l *InteractiveBuildLogger) LogService(serviceName, message string) {
-	// Parse progress from message if present
-	// Extract "Step X/Y" pattern
+func (l *DashboardBuildLogger) LogService(serviceName, message string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	// Update dashboard
-	l.dashboard.UpdateService(serviceName, StatusBuilding, 0, 0, message, nil)
-
-	// Also log to fallback for non-interactive mode
-	if l.fallback != nil {
-		l.fallback.LogService(serviceName, message)
+	// Initialize state if needed
+	if l.serviceState[serviceName] == nil {
+		l.serviceState[serviceName] = &serviceState{
+			status: StatusBuilding,
+		}
 	}
+	state := l.serviceState[serviceName]
+
+	// Parse progress from message "Step X/Y"
+	if matches := l.stepRegex.FindStringSubmatch(message); len(matches) == 3 {
+		current, _ := strconv.Atoi(matches[1])
+		total, _ := strconv.Atoi(matches[2])
+		state.currentStep = current
+		state.totalSteps = total
+	}
+
+	// Check for completion
+	if strings.Contains(message, "Successfully built") || strings.Contains(message, "Successfully tagged") {
+		state.status = StatusComplete
+	}
+
+	// Update dashboard with current state and log line
+	l.dashboard.UpdateService(serviceName, state.status, state.currentStep, state.totalSteps, message, nil)
 }
 
-func (l *InteractiveBuildLogger) LogInfo(message string) {
-	if l.fallback != nil {
-		l.fallback.LogInfo(message)
-	}
+func (l *DashboardBuildLogger) LogInfo(message string) {
+	// Info messages don't need to update the dashboard
+	// Could be displayed in a separate info section if needed
 }
 
-func (l *InteractiveBuildLogger) LogWarn(message string) {
-	if l.fallback != nil {
-		l.fallback.LogWarn(message)
-	}
+func (l *DashboardBuildLogger) LogWarn(message string) {
+	// Warnings could be shown in dashboard if needed
 }
 
-func (l *InteractiveBuildLogger) LogError(message string) {
-	if l.fallback != nil {
-		l.fallback.LogError(message)
-	}
+func (l *DashboardBuildLogger) LogError(message string) {
+	// Errors could be shown in dashboard if needed
 }
 
-func (l *InteractiveBuildLogger) UpdateProgress(serviceName string, current, total int) {
-	l.dashboard.UpdateService(serviceName, StatusBuilding, current, total, "", nil)
+// MarkServiceQueued marks a service as queued
+func (l *DashboardBuildLogger) MarkServiceQueued(serviceName string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	if fb, ok := l.fallback.(interface{ UpdateProgress(string, int, int) }); ok {
-		fb.UpdateProgress(serviceName, current, total)
+	if l.serviceState[serviceName] == nil {
+		l.serviceState[serviceName] = &serviceState{}
 	}
+	l.serviceState[serviceName].status = StatusQueued
+	l.dashboard.UpdateService(serviceName, StatusQueued, 0, 0, "", nil)
+}
+
+// MarkServiceBuilding marks a service as building
+func (l *DashboardBuildLogger) MarkServiceBuilding(serviceName string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.serviceState[serviceName] == nil {
+		l.serviceState[serviceName] = &serviceState{}
+	}
+	l.serviceState[serviceName].status = StatusBuilding
+	l.dashboard.UpdateService(serviceName, StatusBuilding, 0, 0, "", nil)
+}
+
+// MarkServiceComplete marks a service as complete
+func (l *DashboardBuildLogger) MarkServiceComplete(serviceName string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.serviceState[serviceName] == nil {
+		l.serviceState[serviceName] = &serviceState{}
+	}
+	state := l.serviceState[serviceName]
+	state.status = StatusComplete
+	// Set to 100% when complete
+	if state.totalSteps > 0 {
+		state.currentStep = state.totalSteps
+	}
+	l.dashboard.UpdateService(serviceName, StatusComplete, state.currentStep, state.totalSteps, "", nil)
+}
+
+// MarkServiceFailed marks a service as failed
+func (l *DashboardBuildLogger) MarkServiceFailed(serviceName string, err error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.serviceState[serviceName] == nil {
+		l.serviceState[serviceName] = &serviceState{}
+	}
+	l.serviceState[serviceName].status = StatusFailed
+	l.dashboard.UpdateService(serviceName, StatusFailed, 0, 0, "", err)
 }

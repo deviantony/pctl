@@ -9,16 +9,55 @@ Your codebase **already has** the foundation for interactive builds:
 - ✅ **Parallel execution**: `internal/build/orchestrator.go` builds multiple services concurrently
 - ✅ **TUI libraries**: Already using `charmbracelet/bubbletea`, `bubbles`, and `lipgloss`
 
-## What's Missing 🎯
+## What's New 🎯
 
-- ❌ Progress bars showing build completion percentage
-- ❌ Visual feedback for parallel builds (hard to track multiple services)
-- ❌ Interactive dashboard with real-time updates
-- ❌ Build timing and performance metrics
+- ✅ **Passive TUI Dashboard** - Real-time build monitoring with progress bars and live logs
+- ✅ **Auto-updating display** - No interaction required, just watch builds progress
+- ✅ **Multi-service tracking** - See all builds at once with individual progress
+- ✅ **Build timing metrics** - Duration tracking per service
 
-## Implementation Options
+## Recommended: Passive TUI Dashboard ⭐
 
-### Option A: Simple Progress Bars (⏱️ 1-2 hours)
+**What you get:**
+```
+╭─────────────────────────────────────────────────────────────────╮
+│ Building Services                                               │
+│ Complete: 2 | Building: 1 | Failed: 0 | Total: 5                │
+│                                                                  │
+│ ✓ frontend           ████████████████████ 100% (45s)            │
+│                                                                  │
+│ ● backend            ████████░░░░░░░░░░░░  60% (12s)            │
+│     Step 6/10 : RUN npm install                                 │
+│      ---> Running in a1b2c3d4e5f6                               │
+│     npm WARN deprecated package@1.0.0                           │
+│                                                                  │
+│ ⏳ database          ░░░░░░░░░░░░░░░░░░░░   0% (queued)         │
+│                                                                  │
+│ ✓ nginx              ████████████████████ 100% (8s)             │
+│                                                                  │
+│ ● worker             ██████░░░░░░░░░░░░░░  40% (22s)            │
+│     Step 4/10 : COPY . .                                        │
+│      ---> c2d3e4f5a6b7                                          │
+│                                                                  │
+│ Press q or Ctrl+C to quit                                       │
+╰─────────────────────────────────────────────────────────────────╯
+```
+
+**Features:**
+- 🎯 **Fully passive** - Just displays information, no interaction needed
+- 📊 **Progress bars** - Visual progress for each service
+- 📜 **Auto-scrolling logs** - Last 3 lines shown per building service
+- ⏱️ **Build timers** - Real-time duration tracking
+- 🎨 **Color-coded status** - Queued (gray), Building (blue), Complete (green), Failed (red)
+- 🔄 **Real-time updates** - Dashboard refreshes automatically as builds progress
+
+**Already implemented in:**
+- `internal/build/dashboard.go` - Complete TUI dashboard
+- `internal/build/dashboard_integration_example.go` - Integration guide
+
+---
+
+### Alternative: Simple Progress Bars
 
 **What you get:**
 ```
@@ -32,38 +71,6 @@ BUILD  backend   ██████░░░░░░░░░░░░░░ [2
 3. Extract "Step X/Y" from Docker output in `buildRemote()` callback
 
 **See:** `example_simple_progress.go` for exact code
-
----
-
-### Option B: Full Interactive Dashboard (⏱️ 4-6 hours)
-
-**What you get:**
-```
-┌─ Building Services | Complete: 2 | Building: 1 | Failed: 0 | Total: 5 ─┐
-│                                                                          │
-│  ✓ frontend      ████████████████████ 100%   (45s)                      │
-│  ● backend       ████████░░░░░░░░░░░░  60%   (12s)                      │
-│  ⏳ database     ░░░░░░░░░░░░░░░░░░░░   0%   (queue)                    │
-│  ✓ nginx         ████████████████████ 100%   (8s)                       │
-│  ● worker        ██████░░░░░░░░░░░░░░  40%   (22s)                      │
-│                                                                          │
-└──────────────────────────────────────────────────────────────────────────┘
-
-── Logs: backend ─────────────────────────────────────────────────────────
-Step 6/10 : RUN npm install
- ---> Running in a1b2c3d4e5f6
-npm WARN deprecated package@1.0.0
-Successfully built image
-
-Controls: ↑/k up | ↓/j down | q quit
-```
-
-**Changes needed:**
-1. Use `internal/build/dashboard.go` (already created for you)
-2. Integrate into `cmd/deploy/deploy.go` or `cmd/redeploy/redeploy.go`
-3. Add terminal detection with `golang.org/x/term/isatty`
-
-**See:** `internal/build/dashboard_integration_example.go:9-49`
 
 ---
 
@@ -89,60 +96,81 @@ Additional capabilities to add later:
    - Network I/O for image pulls
    - Requires Docker stats API integration
 
-## Recommended Implementation Path
+## Implementation Guide
 
-### Phase 1: Start with Progress Bars ⭐
+### Using the Passive TUI Dashboard
 
-**Why:** Immediate visual feedback with minimal code changes
+**The dashboard is already fully implemented!** You just need to integrate it into your build commands.
 
-**Steps:**
+**Step 1: Add terminal detection dependency**
 ```bash
-# 1. Add progress dependencies (already have bubbles!)
-go get github.com/charmbracelet/bubbles/progress
-
-# 2. Modify 3 files:
-#    - internal/build/logger.go (add UpdateProgress method)
-#    - internal/build/orchestrator.go (add to BuildLogger interface)
-#    - internal/build/orchestrator.go (extract Step X/Y in buildRemote)
-
-# 3. Test
-pctl deploy --stack my-stack --environment 1
-```
-
-**Files to change:**
-- `internal/build/logger.go` (add lines from `example_simple_progress.go`)
-- `internal/build/orchestrator.go` (update callback in `buildRemote()`)
-
-### Phase 2: Add Interactive Dashboard
-
-**Why:** Better experience for multi-service builds
-
-**Steps:**
-```bash
-# 1. Add terminal detection
 go get golang.org/x/term
-
-# 2. Integrate dashboard.go
-#    - Modify cmd/deploy/deploy.go
-#    - Check if stdout is a terminal
-#    - Launch dashboard TUI if interactive
-#    - Fall back to regular logs if not
-
-# 3. Test both modes
-pctl deploy --stack my-stack --environment 1              # Interactive
-pctl deploy --stack my-stack --environment 1 > log.txt   # Non-interactive
 ```
 
-**Files to change:**
-- `cmd/deploy/deploy.go` (see `dashboard_integration_example.go:9-49`)
-- `cmd/redeploy/redeploy.go` (same pattern)
+**Step 2: Integrate into `cmd/deploy/deploy.go`** (or `cmd/redeploy/redeploy.go`)
 
-### Phase 3: Enhancements
+See complete example in `internal/build/dashboard_integration_example.go`.
+
+**Minimal integration:**
+```go
+import (
+	"os"
+	"time"
+	"golang.org/x/term"
+	"github.com/deviantony/pctl/internal/build"
+)
+
+// Before calling BuildServices:
+var logger build.BuildLogger = build.NewStyledBuildLogger("BUILD")
+var dashboard *build.BuildDashboard
+
+// Check if terminal supports TUI and multiple services
+if term.IsTerminal(int(os.Stdout.Fd())) && len(servicesWithBuild) > 1 {
+	serviceNames := make([]string, len(servicesWithBuild))
+	for i, svc := range servicesWithBuild {
+		serviceNames[i] = svc.ServiceName
+	}
+
+	dashboard = build.NewBuildDashboard(serviceNames)
+	logger = build.NewDashboardBuildLogger(dashboard)
+	dashboard.Start()
+}
+
+// Create orchestrator with the logger
+orchestrator := build.NewBuildOrchestrator(client, buildConfig, envID, stackName, logger)
+
+// Build services
+imageTags, err := orchestrator.BuildServices(servicesWithBuild)
+
+// Stop dashboard after builds complete
+if dashboard != nil {
+	time.Sleep(2 * time.Second) // Keep visible for a moment
+	dashboard.Stop()
+}
+```
+
+**Step 3: Test both modes**
+```bash
+# Interactive mode (shows TUI dashboard)
+pctl deploy --stack my-stack --environment 1
+
+# Non-interactive mode (regular logs)
+pctl deploy --stack my-stack --environment 1 > log.txt
+```
+
+That's it! The dashboard will:
+- ✅ Auto-detect if running in a terminal
+- ✅ Fall back to regular logs if not interactive
+- ✅ Update in real-time as builds progress
+- ✅ Show progress bars, logs, and timings
+- ✅ Work with parallel builds out of the box
+
+### Optional Enhancements
 
 Add features based on user feedback:
-- Cancellation (high priority)
-- Log export (useful for debugging)
-- Analytics (nice to have)
+- Cancellation support (high priority)
+- Log export to files (useful for debugging)
+- Build analytics and cache statistics (nice to have)
 
 ## Docker JSON Stream Format
 
