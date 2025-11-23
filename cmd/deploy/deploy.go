@@ -126,7 +126,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			// Stop dashboard before returning error
 			if dashboard != nil {
-				time.Sleep(1 * time.Second)
+				time.Sleep(build.DashboardErrorDisplayDuration)
 				dashboard.Stop()
 			}
 			return fmt.Errorf("build failed: %w", err)
@@ -134,7 +134,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 
 		// Keep dashboard visible for a moment before stopping
 		if dashboard != nil {
-			time.Sleep(2 * time.Second)
+			time.Sleep(build.DashboardSuccessDisplayDuration)
 			dashboard.Stop()
 		}
 

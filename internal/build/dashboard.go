@@ -13,6 +13,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// Dashboard display durations
+const (
+	DashboardErrorDisplayDuration   = 1 * time.Second
+	DashboardSuccessDisplayDuration = 2 * time.Second
+)
+
+// Compile regex patterns once at package initialization
+var (
+	streamRegex = regexp.MustCompile(`"stream"\s*:\s*"([^"]*)"`)
+)
+
 // BuildDashboard provides a passive TUI for monitoring parallel builds
 // It auto-updates and displays all services without requiring user interaction
 type BuildDashboard struct {
@@ -118,8 +129,12 @@ func NewBuildDashboard(services []string) *BuildDashboard {
 }
 
 // Start launches the TUI
+// The program is initialized before the goroutine starts to avoid race conditions
 func (bd *BuildDashboard) Start() {
+	// Initialize program before starting goroutine to prevent race condition
+	// with UpdateService calls that may happen immediately after Start() returns
 	bd.program = tea.NewProgram(bd.model)
+
 	go func() {
 		if _, err := bd.program.Run(); err != nil {
 			fmt.Printf("Error running dashboard: %v\n", err)
@@ -221,7 +236,11 @@ func (m *dashboardModel) View() string {
 	building := 0
 	failed := 0
 	for _, svc := range m.services {
-		switch svc.Status {
+		svc.mu.Lock()
+		status := svc.Status
+		svc.mu.Unlock()
+
+		switch status {
 		case StatusComplete:
 			completed++
 		case StatusBuilding:
@@ -324,10 +343,8 @@ func cleanLogLine(line string) string {
 
 	// If it starts with {, try to parse as JSON
 	if line[0] == '{' {
-		var m map[string]interface{}
-		if err := regexp.MustCompile(`"stream"\s*:\s*"([^"]*)"`)
-			.FindStringSubmatch(line); err != nil && len(err) > 1 {
-			return strings.TrimSpace(err[1])
+		if matches := streamRegex.FindStringSubmatch(line); matches != nil && len(matches) > 1 {
+			return strings.TrimSpace(matches[1])
 		}
 	}
 
