@@ -2,6 +2,8 @@ package redeploy
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/deviantony/pctl/internal/build"
 	"github.com/deviantony/pctl/internal/compose"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -111,14 +114,41 @@ func runRedeploy(cmd *cobra.Command, args []string) error {
 		// Create Portainer client
 		client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
 
+		// Create build logger (use dashboard if interactive terminal with multiple services)
+		var logger build.BuildLogger = build.NewStyledBuildLogger("BUILD")
+		var dashboard *build.BuildDashboard
+
+		if term.IsTerminal(int(os.Stdout.Fd())) && len(servicesWithBuild) > 1 {
+			// Extract service names for dashboard
+			serviceNames := make([]string, len(servicesWithBuild))
+			for i, svc := range servicesWithBuild {
+				serviceNames[i] = svc.ServiceName
+			}
+
+			// Create and start passive TUI dashboard
+			dashboard = build.NewBuildDashboard(serviceNames)
+			logger = build.NewDashboardBuildLogger(dashboard)
+			dashboard.Start()
+		}
+
 		// Create build orchestrator
-		logger := build.NewStyledBuildLogger("BUILD")
 		orchestrator := build.NewBuildOrchestrator(client, buildConfig, cfg.EnvironmentID, cfg.StackName, logger)
 
 		// Build services
 		imageTags, err := orchestrator.BuildServices(servicesWithBuild)
 		if err != nil {
+			// Stop dashboard before returning error
+			if dashboard != nil {
+				time.Sleep(1 * time.Second)
+				dashboard.Stop()
+			}
 			return fmt.Errorf("build failed: %w", err)
+		}
+
+		// Keep dashboard visible for a moment before stopping
+		if dashboard != nil {
+			time.Sleep(2 * time.Second)
+			dashboard.Stop()
 		}
 
 		// Transform compose file
