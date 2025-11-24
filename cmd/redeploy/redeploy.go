@@ -2,6 +2,7 @@ package redeploy
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/deviantony/pctl/internal/build"
 	"github.com/deviantony/pctl/internal/compose"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -111,15 +113,28 @@ func runRedeploy(cmd *cobra.Command, args []string) error {
 		// Create Portainer client
 		client := portainer.NewClientWithTLS(cfg.PortainerURL, cfg.APIToken, cfg.SkipTLSVerify)
 
+		// Extract service names and setup build logger
+		serviceNames := make([]string, len(servicesWithBuild))
+		for i, svc := range servicesWithBuild {
+			serviceNames[i] = svc.ServiceName
+		}
+
+		// Setup build logger with optional dashboard for interactive terminals
+		dashboardSetup := build.SetupBuildLogger(serviceNames, term.IsTerminal(int(os.Stdout.Fd())))
+
 		// Create build orchestrator
-		logger := build.NewStyledBuildLogger("BUILD")
-		orchestrator := build.NewBuildOrchestrator(client, buildConfig, cfg.EnvironmentID, cfg.StackName, logger)
+		orchestrator := build.NewBuildOrchestrator(client, buildConfig, cfg.EnvironmentID, cfg.StackName, dashboardSetup.Logger)
 
 		// Build services
 		imageTags, err := orchestrator.BuildServices(servicesWithBuild)
 		if err != nil {
+			// Stop dashboard before returning error
+			dashboardSetup.StopDashboard(build.DashboardErrorDisplayDuration)
 			return fmt.Errorf("build failed: %w", err)
 		}
+
+		// Keep dashboard visible for a moment before stopping
+		dashboardSetup.StopDashboard(build.DashboardSuccessDisplayDuration)
 
 		// Transform compose file
 		transformer, err := compose.TransformComposeFile(composeContent, imageTags)
