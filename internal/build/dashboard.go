@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,6 +18,8 @@ import (
 const (
 	DashboardErrorDisplayDuration   = 1 * time.Second
 	DashboardSuccessDisplayDuration = 2 * time.Second
+	MaxLogLinesPerService           = 3
+	ServiceNameColumnWidth          = 20
 )
 
 // Compile regex patterns once at package initialization
@@ -64,6 +67,7 @@ type BuildDashboard struct {
 	program      *tea.Program
 	model        *dashboardModel
 	serviceOrder []string // Preserve service order for consistent display
+	mu           sync.RWMutex
 }
 
 type ServiceBuildStatus struct {
@@ -190,19 +194,29 @@ func NewBuildDashboard(services []string) *BuildDashboard {
 func (bd *BuildDashboard) Start() {
 	// Initialize program before starting goroutine to prevent race condition
 	// with UpdateService calls that may happen immediately after Start() returns
+	bd.mu.Lock()
 	bd.program = tea.NewProgram(bd.model)
+	bd.mu.Unlock()
 
 	go func() {
-		if _, err := bd.program.Run(); err != nil {
-			fmt.Printf("Error running dashboard: %v\n", err)
+		bd.mu.RLock()
+		prog := bd.program
+		bd.mu.RUnlock()
+
+		if _, err := prog.Run(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error running dashboard: %v\n", err)
 		}
 	}()
 }
 
 // UpdateService updates a service's build status
 func (bd *BuildDashboard) UpdateService(serviceName string, status BuildStatus, currentStep, totalSteps int, logLine string, err error) {
-	if bd.program != nil {
-		bd.program.Send(UpdateMsg{
+	bd.mu.RLock()
+	prog := bd.program
+	bd.mu.RUnlock()
+
+	if prog != nil {
+		prog.Send(UpdateMsg{
 			ServiceName: serviceName,
 			Status:      status,
 			Step:        currentStep,
@@ -215,8 +229,12 @@ func (bd *BuildDashboard) UpdateService(serviceName string, status BuildStatus, 
 
 // Stop stops the dashboard
 func (bd *BuildDashboard) Stop() {
-	if bd.program != nil {
-		bd.program.Quit()
+	bd.mu.RLock()
+	prog := bd.program
+	bd.mu.RUnlock()
+
+	if prog != nil {
+		prog.Quit()
 	}
 }
 
@@ -239,10 +257,10 @@ func (m *dashboardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			svc.CurrentStep = msg.Step
 			svc.TotalSteps = msg.Total
 			if msg.LogLine != "" {
-				// Keep only last 3 log lines per service
+				// Keep only last N log lines per service
 				svc.Logs = append(svc.Logs, msg.LogLine)
-				if len(svc.Logs) > 3 {
-					svc.Logs = svc.Logs[len(svc.Logs)-3:]
+				if len(svc.Logs) > MaxLogLinesPerService {
+					svc.Logs = svc.Logs[len(svc.Logs)-MaxLogLinesPerService:]
 				}
 			}
 			if msg.Error != nil {
@@ -314,7 +332,7 @@ func (m *dashboardModel) View() string {
 			Foreground(svc.Status.Color()).
 			Bold(true)
 
-		line := fmt.Sprintf("%s %-20s ", statusStyle.Render(svc.Status.String()), svc.Name)
+		line := fmt.Sprintf("%s %-*s ", statusStyle.Render(svc.Status.String()), ServiceNameColumnWidth, svc.Name)
 
 		// Progress bar
 		if svc.TotalSteps > 0 {
