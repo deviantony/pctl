@@ -24,6 +24,40 @@ var (
 	streamRegex = regexp.MustCompile(`"stream"\s*:\s*"([^"]*)"`)
 )
 
+// DashboardSetup contains the logger and optional dashboard for a build session
+type DashboardSetup struct {
+	Logger    BuildLogger
+	Dashboard *BuildDashboard
+}
+
+// StopDashboard stops the dashboard if it exists, waiting for the specified duration
+func (ds *DashboardSetup) StopDashboard(duration time.Duration) {
+	if ds.Dashboard != nil {
+		time.Sleep(duration)
+		ds.Dashboard.Stop()
+	}
+}
+
+// SetupBuildLogger creates a build logger, optionally with a TUI dashboard
+// if running in an interactive terminal with multiple services to build.
+// The dashboard is automatically started if created.
+func SetupBuildLogger(serviceNames []string, isTerminal bool) *DashboardSetup {
+	setup := &DashboardSetup{}
+
+	// Use dashboard if interactive terminal with multiple services
+	if isTerminal && len(serviceNames) > 1 {
+		dashboard := NewBuildDashboard(serviceNames)
+		setup.Logger = NewDashboardBuildLogger(dashboard)
+		dashboard.Start()
+		setup.Dashboard = dashboard
+	} else {
+		// Use regular styled logger for single service or non-interactive
+		setup.Logger = NewStyledBuildLogger("BUILD")
+	}
+
+	return setup
+}
+
 // BuildDashboard provides a passive TUI for monitoring parallel builds
 // It auto-updates and displays all services without requiring user interaction
 type BuildDashboard struct {
@@ -90,6 +124,13 @@ type dashboardModel struct {
 	width        int
 	height       int
 	mu           sync.RWMutex
+
+	// Pre-computed styles for better performance
+	borderStyle lipgloss.Style
+	headerStyle lipgloss.Style
+	dimStyle    lipgloss.Style
+	logStyle    lipgloss.Style
+	errorStyle  lipgloss.Style
 }
 
 // UpdateMsg is sent when a service's status changes
@@ -120,6 +161,22 @@ func NewBuildDashboard(services []string) *BuildDashboard {
 		services:     serviceMap,
 		serviceOrder: services, // Preserve order
 		progressBars: progressBars,
+		// Pre-compute styles once for better render performance
+		borderStyle: lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("238")).
+			Padding(0, 1),
+		headerStyle: lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("13")),
+		dimStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("8")),
+		logStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("250")).
+			MarginLeft(2),
+		errorStyle: lipgloss.NewStyle().
+			Foreground(lipgloss.Color("9")).
+			MarginLeft(2),
 	}
 
 	return &BuildDashboard{
@@ -218,19 +275,6 @@ func (m *dashboardModel) View() string {
 
 	var b strings.Builder
 
-	// Define styles
-	borderStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("238")).
-		Padding(0, 1)
-
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("13"))
-
-	dimStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("8"))
-
 	// Count statuses
 	completed := 0
 	building := 0
@@ -252,8 +296,8 @@ func (m *dashboardModel) View() string {
 
 	// Build the content
 	var content strings.Builder
-	content.WriteString(headerStyle.Render("Building Services") + "\n")
-	content.WriteString(dimStyle.Render(fmt.Sprintf("Complete: %d | Building: %d | Failed: %d | Total: %d",
+	content.WriteString(m.headerStyle.Render("Building Services") + "\n")
+	content.WriteString(m.dimStyle.Render(fmt.Sprintf("Complete: %d | Building: %d | Failed: %d | Total: %d",
 		completed, building, failed, len(m.services))) + "\n\n")
 
 	// Iterate through services in order
@@ -291,34 +335,27 @@ func (m *dashboardModel) View() string {
 			duration = svc.EndTime.Sub(svc.StartTime)
 		}
 		if duration > 0 {
-			line += dimStyle.Render(fmt.Sprintf("(%s)", duration.Round(time.Second)))
+			line += m.dimStyle.Render(fmt.Sprintf("(%s)", duration.Round(time.Second)))
 		} else if svc.Status == StatusQueued {
-			line += dimStyle.Render("(queued)")
+			line += m.dimStyle.Render("(queued)")
 		}
 
 		content.WriteString(line + "\n")
 
 		// Show last few log lines for building services
 		if svc.Status == StatusBuilding && len(svc.Logs) > 0 {
-			logStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("250")).
-				MarginLeft(2)
-
 			for _, logLine := range svc.Logs {
 				// Clean and indent log lines
 				cleanedLog := cleanLogLine(logLine)
 				if cleanedLog != "" {
-					content.WriteString(logStyle.Render("  "+cleanedLog) + "\n")
+					content.WriteString(m.logStyle.Render("  "+cleanedLog) + "\n")
 				}
 			}
 		}
 
 		// Show error for failed services
 		if svc.Status == StatusFailed && svc.Error != nil {
-			errorStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("9")).
-				MarginLeft(2)
-			content.WriteString(errorStyle.Render(fmt.Sprintf("  Error: %v", svc.Error)) + "\n")
+			content.WriteString(m.errorStyle.Render(fmt.Sprintf("  Error: %v", svc.Error)) + "\n")
 		}
 
 		content.WriteString("\n")
@@ -326,10 +363,10 @@ func (m *dashboardModel) View() string {
 	}
 
 	// Add quit hint at bottom
-	content.WriteString(dimStyle.Render("Press q or Ctrl+C to quit"))
+	content.WriteString(m.dimStyle.Render("Press q or Ctrl+C to quit"))
 
 	// Wrap in border
-	b.WriteString(borderStyle.Render(content.String()))
+	b.WriteString(m.borderStyle.Render(content.String()))
 
 	return b.String()
 }
